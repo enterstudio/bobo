@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 import javax.management.MBeanServer;
@@ -16,10 +15,10 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 
 import com.browseengine.bobo.api.BoboCustomSortField;
 import com.browseengine.bobo.api.BoboIndexReader;
-import com.browseengine.bobo.api.BoboSubBrowser;
 import com.browseengine.bobo.api.Browsable;
 import com.browseengine.bobo.api.BrowseHit;
 import com.browseengine.bobo.api.FacetAccessible;
@@ -134,35 +133,35 @@ public abstract class SortCollector extends Collector {
 		if (locale != null) {
 	      return new DocComparatorSource.StringLocaleComparatorSource(fieldname, locale);
 		}
-		
-		int type = sf.getType();
+	
+		Type type = sf.getType();
 
 	    switch (type) {
-	    case SortField.INT:
+	    case INT:
 	      return new DocComparatorSource.IntDocComparatorSource(fieldname);
 	
-	    case SortField.FLOAT:
+	    case FLOAT:
 	      return new DocComparatorSource.FloatDocComparatorSource(fieldname);
 	
-	    case SortField.LONG:
+	    case LONG:
 	      return new DocComparatorSource.LongDocComparatorSource(fieldname);
 	
-	    case SortField.DOUBLE:
+	    case DOUBLE:
 	      return new DocComparatorSource.LongDocComparatorSource(fieldname);
 	
-	    case SortField.BYTE:
+	    case BYTE:
 	      return new DocComparatorSource.ByteDocComparatorSource(fieldname);
 	
-	    case SortField.SHORT:
+	    case SHORT:
 	      return new DocComparatorSource.ShortDocComparatorSource(fieldname);
 	
-	    case SortField.CUSTOM:
+	    case CUSTOM:
 		  throw new IllegalArgumentException("lucene custom sort no longer supported: "+fieldname); 
 	
-	    case SortField.STRING:
+	    case STRING:
 	      return new DocComparatorSource.StringOrdComparatorSource(fieldname);
 	
-	    case SortField.STRING_VAL:
+	    case STRING_VAL:
 	      return new DocComparatorSource.StringValComparatorSource(fieldname);
 	        
 	    default:
@@ -175,7 +174,7 @@ public abstract class SortCollector extends Collector {
 		if (SortField.FIELD_DOC.equals(sf)){
 			compSource = new DocIdDocComparatorSource();
 		}
-		else if (SortField.FIELD_SCORE.equals(sf) || sf.getType() == SortField.SCORE){
+		else if (SortField.FIELD_SCORE.equals(sf) || sf.getType() == Type.SCORE){
 			// we want to do reverse sorting regardless for relevance
 			compSource = new ReverseDocComparatorSource(new RelevanceDocComparatorSource());
 		}
@@ -232,7 +231,7 @@ public abstract class SortCollector extends Collector {
 		
 		Set<String> facetNames = browser.getFacetNames();
 		for (SortField sf : sort){
-			if (sf.getType() == SortField.SCORE) {
+			if (sf.getType() == Type.SCORE) {
 				doScoring= true;
 				break;
 			}	

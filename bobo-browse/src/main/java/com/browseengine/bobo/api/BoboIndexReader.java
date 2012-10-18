@@ -40,28 +40,26 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.ReaderUtil;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
 
 import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.facets.RuntimeFacetHandler;
@@ -71,7 +69,7 @@ import com.browseengine.bobo.facets.RuntimeFacetHandlerFactory;
  * bobo browse index reader
  * 
  */
-public class BoboIndexReader extends FilterIndexReader
+public class BoboIndexReader extends FilterAtomicReader
 {
   private static final String                     SPRING_CONFIG = "bobo.spring";
   private static Logger                           logger        = Logger.getLogger(BoboIndexReader.class);

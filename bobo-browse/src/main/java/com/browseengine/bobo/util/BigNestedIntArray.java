@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 
 import com.browseengine.bobo.facets.data.TermValueList;
@@ -613,7 +613,7 @@ public final class BigNestedIntArray
     return false;
   }
   
-  public final boolean contains(int id, BitVector values)
+  public final boolean contains(int id, Bits values)
   {
     final int[] page = _list[id >> PAGEID_SHIFT];
     if(page == null) return false;
@@ -728,12 +728,12 @@ public final class BigNestedIntArray
     return DocIdSetIterator.NO_MORE_DOCS;
   }
   
-  public final int findValues(BitVector values, int id, int maxID)
+  public final int findValues(Bits values, int id, int maxID)
   {
     return findValues(values, id, maxID, false);
   }
 
-  public final int findValues(BitVector values, int id, int maxID, boolean withMissing)
+  public final int findValues(Bits values, int id, int maxID, boolean withMissing)
   {
     int[] page = _list[id >> PAGEID_SHIFT];
     if(page == null) page = MISSING_PAGE;
@@ -903,7 +903,7 @@ public final class BigNestedIntArray
     return;
   }
   
-  public final void countNoReturnWithFilter(final int id, final int[] count, BitVector filter)
+  public final void countNoReturnWithFilter(final int id, final int[] count, Bits filter)
   {
     final int[] page = _list[id >> PAGEID_SHIFT];
     if(page == null) {

@@ -3,7 +3,7 @@ package com.browseengine.bobo.util;
 import java.util.Arrays;
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 
 public class BigShortArray extends BigSegmentedArray {
@@ -61,7 +61,7 @@ public class BigShortArray extends BigSegmentedArray {
 	  }
 	  
 	  @Override
-	  public final int findValues(BitVector bitset, int docId, int maxId)
+	  public final int findValues(Bits bitset, int docId, int maxId)
 	  {
 	    while(true)
 	    {

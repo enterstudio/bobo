@@ -1,6 +1,6 @@
 package com.browseengine.bobo.util;
 
-import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 
 
@@ -47,7 +47,7 @@ public abstract class BigSegmentedArray {
 	
     abstract public int findValues(OpenBitSet bitset, int docId, int maxId);
     
-    abstract public int findValues(BitVector bitset, int docId, int maxId);
+    abstract public int findValues(Bits bitset, int docId, int maxId);
     
 	abstract public int findValueRange(int minVal, int maxVal, int docId, int maxId);
 	  

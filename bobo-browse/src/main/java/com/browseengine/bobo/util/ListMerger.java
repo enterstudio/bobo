@@ -50,22 +50,18 @@ public class ListMerger
       }
     }
 
-    private final PriorityQueue _queue;
+    private final PriorityQueue<IteratorNode> _queue;
 
     private MergedIterator(final int length, final Comparator<T> comparator)
     {
-      _queue = new PriorityQueue()
+      _queue = new PriorityQueue<IteratorNode>(length)
       {
-        {
-          this.initialize(length);
-        }
-      
         @SuppressWarnings("unchecked")
         @Override
-        protected boolean lessThan(Object o1, Object o2)
+        protected boolean lessThan(IteratorNode o1, IteratorNode o2)
         {
-          T v1 = ((IteratorNode)o1)._curVal;
-          T v2 = ((IteratorNode)o2)._curVal;
+          T v1 = o1._curVal;
+          T v2 = o2._curVal;
           
           return (comparator.compare(v1, v2) < 0);
         }

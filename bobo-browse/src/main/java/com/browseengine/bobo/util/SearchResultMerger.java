@@ -39,22 +39,18 @@ public class SearchResultMerger<T>
       }
     }
 
-    private final PriorityQueue _queue;
+    private final PriorityQueue<IteratorCtx> _queue;
 
     public MergedIterator(final List<Iterator<T>> sources, final Comparator<T> comparator)
     {
-      _queue = new PriorityQueue()
+      _queue = new PriorityQueue<IteratorCtx>(sources.size())
       {
-        {
-          this.initialize(sources.size());
-        }
-      
         @SuppressWarnings("unchecked")
         @Override
-        protected boolean lessThan(Object o1, Object o2)
+        protected boolean lessThan(IteratorCtx o1, IteratorCtx o2)
         {
-          T v1 = ((IteratorCtx)o1)._curVal;
-          T v2 = ((IteratorCtx)o2)._curVal;
+          T v1 = o1._curVal;
+          T v2 = o2._curVal;
           
           return (comparator.compare(v1, v2) < 0);
         }

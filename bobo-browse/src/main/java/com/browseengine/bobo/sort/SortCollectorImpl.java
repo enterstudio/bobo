@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
@@ -35,10 +35,7 @@ import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.facets.data.FacetDataCache;
 import com.browseengine.bobo.facets.data.PrimitiveLongArrayWrapper;
 import com.browseengine.bobo.facets.impl.GroupByFacetCountCollector;
-import com.browseengine.bobo.facets.impl.SimpleFacetHandler;
-import com.browseengine.bobo.sort.ReverseDocComparatorSource.ReverseDocComparator.ReverseComparable;
 import com.browseengine.bobo.util.ListMerger;
-import com.browseengine.bobo.util.StringArrayComparator;
 
 
 public class SortCollectorImpl extends SortCollector {
@@ -330,7 +327,9 @@ public class SortCollectorImpl extends SortCollector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
+  public void setNextReader(AtomicReaderContext readerCtx) throws IOException {
+	int docBase = readerCtx.docBase;
+	AtomicReader reader = readerCtx.reader();
     assert reader instanceof BoboIndexReader;
     _currentReader = (BoboIndexReader)reader;
     _currentComparator = _compSource.getComparator(reader,docBase);
