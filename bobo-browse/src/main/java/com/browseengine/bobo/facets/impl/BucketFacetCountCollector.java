@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.OpenBitSet;
 
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.FacetIterator;
@@ -52,7 +52,7 @@ public class BucketFacetCountCollector implements FacetCountCollector
 		FacetDataCache dataCache = _subCollector._dataCache;
 		TermValueList<?> subList = dataCache.valArray; 
 		int[] subcounts = _subCollector._count;
-		BitVector indexSet = new BitVector(subcounts.length);
+		OpenBitSet indexSet = new OpenBitSet(subcounts.length);
 		int c = 0;
 		int i = 0;
 		for (String val : _bucketValues){

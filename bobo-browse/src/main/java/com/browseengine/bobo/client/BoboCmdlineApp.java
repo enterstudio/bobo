@@ -121,7 +121,7 @@ public class BoboCmdlineApp {
 				String queryString = qString;
 	            if (queryString!=null)
 	            {
-	              QueryParser qparser = new QueryParser(Version.LUCENE_CURRENT,"contents",new StandardAnalyzer(Version.LUCENE_CURRENT));
+	              QueryParser qparser = new QueryParser(Version.LUCENE_40,"contents",new StandardAnalyzer(Version.LUCENE_40));
 	              Query q;
 	              try
 	              {
@@ -277,7 +277,7 @@ public class BoboCmdlineApp {
 							System.out.println(e.getMessage()+", default rev to false");
 						}
 					  }
-					  sortList.add(new SortField(sortName,SortField.CUSTOM,rev));
+					  sortList.add(new SortField(sortName,SortField.Type.CUSTOM,rev));
 					}
 				}
 				_reqBuilder.applySort(sortList.toArray(new SortField[sortList.size()]));

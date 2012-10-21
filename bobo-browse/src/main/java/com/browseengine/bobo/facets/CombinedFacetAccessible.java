@@ -1,7 +1,6 @@
 package com.browseengine.bobo.facets;
 
 import java.util.ArrayList;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -15,11 +14,11 @@ import com.browseengine.bobo.api.DoubleFacetIterator;
 import com.browseengine.bobo.api.FacetAccessible;
 import com.browseengine.bobo.api.FacetIterator;
 import com.browseengine.bobo.api.FacetSpec;
+import com.browseengine.bobo.api.FacetSpec.FacetSortSpec;
 import com.browseengine.bobo.api.FloatFacetIterator;
 import com.browseengine.bobo.api.IntFacetIterator;
 import com.browseengine.bobo.api.LongFacetIterator;
 import com.browseengine.bobo.api.ShortFacetIterator;
-import com.browseengine.bobo.api.FacetSpec.FacetSortSpec;
 import com.browseengine.bobo.facets.impl.CombinedDoubleFacetIterator;
 import com.browseengine.bobo.facets.impl.CombinedFacetIterator;
 import com.browseengine.bobo.facets.impl.CombinedFloatFacetIterator;
@@ -229,15 +228,12 @@ public class CombinedFacetAccessible implements FacetAccessible
     return list;
   }
 
-  private PriorityQueue createPQ(final int max, final Comparator<BrowseFacet> comparator)
+  private PriorityQueue<BrowseFacet> createPQ(final int max, final Comparator<BrowseFacet> comparator)
   {
-    PriorityQueue queue = new PriorityQueue()
+    PriorityQueue<BrowseFacet> queue = new PriorityQueue<BrowseFacet>(max)
     {
-      {
-        this.initialize(max);
-      }
       @Override
-      protected boolean lessThan(Object arg0, Object arg1)
+      protected boolean lessThan(BrowseFacet arg0, BrowseFacet arg1)
       {
         BrowseFacet o1 = (BrowseFacet)arg0;
         BrowseFacet o2 = (BrowseFacet)arg1;

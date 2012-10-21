@@ -5,7 +5,7 @@ package com.browseengine.bobo.sort;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 
 /**
  * @author ymatsuda
@@ -21,7 +21,7 @@ public class MultiDocIdComparatorSource extends DocComparatorSource
   }
   
   @Override
-  public DocComparator getComparator(IndexReader reader, int docBase) throws IOException
+  public DocComparator getComparator(AtomicReader reader, int docBase) throws IOException
   {
     DocComparator[] comparators = new DocComparator[_compSources.length];
     for (int i=0; i<_compSources.length; ++i)

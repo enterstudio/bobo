@@ -26,9 +26,7 @@
 package com.browseengine.bobo.api;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,17 +43,12 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -81,11 +73,6 @@ public class BoboIndexReader extends FilterAtomicReader
   protected Map<String,RuntimeFacetHandlerFactory<?,?>> _runtimeFacetHandlerFactoryMap;
 
   protected WorkArea                                _workArea;
-
-  protected IndexReader _srcReader;
-  protected BoboIndexReader[] _subReaders = null;
-  protected int[] _starts = null;
-  private Directory _dir = null;
   
   private final Map<String,Object> _facetDataMap = new HashMap<String,Object>();
   private final ThreadLocal<Map<String,Object>> _runtimeFacetDataMap = new ThreadLocal<Map<String,Object>>()
@@ -105,12 +92,12 @@ public class BoboIndexReader extends FilterAtomicReader
    *          Index reader
    * @throws IOException
    */
-  public static BoboIndexReader getInstance(IndexReader reader) throws IOException
+  public static BoboIndexReader getInstance(AtomicReader reader) throws IOException
   {
     return BoboIndexReader.getInstance(reader, null, null, new WorkArea());
   }
 
-  public static BoboIndexReader getInstance(IndexReader reader, WorkArea workArea) throws IOException
+  public static BoboIndexReader getInstance(AtomicReader reader, WorkArea workArea) throws IOException
   {
     return BoboIndexReader.getInstance(reader, null, null, workArea);
   }
@@ -124,20 +111,20 @@ public class BoboIndexReader extends FilterAtomicReader
    *          List of facet handlers
    * @throws IOException
    */
-  public static BoboIndexReader getInstance(IndexReader reader,
+  public static BoboIndexReader getInstance(AtomicReader reader,
                                             Collection<FacetHandler<?>> facetHandlers,
                                             Collection<RuntimeFacetHandlerFactory<?,?>> facetHandlerFactories) throws IOException
   {
     return BoboIndexReader.getInstance(reader, facetHandlers, facetHandlerFactories, new WorkArea());
   }
   
-  public static BoboIndexReader getInstance(IndexReader reader,
+  public static BoboIndexReader getInstance(AtomicReader reader,
           Collection<FacetHandler<?>> facetHandlers) throws IOException
   {
     return BoboIndexReader.getInstance(reader, facetHandlers, Collections.EMPTY_LIST, new WorkArea());
   }
 
-  public static BoboIndexReader getInstance(IndexReader reader,
+  public static BoboIndexReader getInstance(AtomicReader reader,
                                             Collection<FacetHandler<?>> facetHandlers,
                                             Collection<RuntimeFacetHandlerFactory<?,?>> facetHandlerFactories,
                                             WorkArea workArea) throws IOException
@@ -147,46 +134,34 @@ public class BoboIndexReader extends FilterAtomicReader
     return boboReader;
   }
 
-  public static BoboIndexReader getInstanceAsSubReader(IndexReader reader) throws IOException
+  public static BoboIndexReader getInstanceAsSubReader(AtomicReader reader) throws IOException
   {
     return getInstanceAsSubReader(reader, null, null, new WorkArea());
   }
 
-  public static BoboIndexReader getInstanceAsSubReader(IndexReader reader,
+  public static BoboIndexReader getInstanceAsSubReader(AtomicReader reader,
                                                        Collection<FacetHandler<?>> facetHandlers,
                                                        Collection<RuntimeFacetHandlerFactory<?,?>> facetHandlerFactories) throws IOException
   {
     return getInstanceAsSubReader(reader, facetHandlers, facetHandlerFactories, new WorkArea());
   }
 
-  public static BoboIndexReader getInstanceAsSubReader(IndexReader reader,
+  public static BoboIndexReader getInstanceAsSubReader(AtomicReader reader,
                                                        Collection<FacetHandler<?>> facetHandlers,
                                                        Collection<RuntimeFacetHandlerFactory<?,?>> facetHandlerFactories,
                                                        WorkArea workArea) throws IOException
   {
-    BoboIndexReader boboReader = new BoboIndexReader(reader, facetHandlers, facetHandlerFactories, workArea, false);
+    BoboIndexReader boboReader = new BoboIndexReader(reader, facetHandlers, facetHandlerFactories, workArea);
     boboReader.facetInit();
     return boboReader;
   }
   
-  
-
-  @Override
-  public long getVersion() {
-	try {
-		SegmentInfos sinfos = new SegmentInfos();
-		sinfos.read(_dir);
-		return sinfos.getVersion();
-	} catch (Exception e) {
-		return 0L;
-	} 
-  }
-
-  public IndexReader getInnerReader()
+  public AtomicReader getInnerReader()
   {
     return in;
   }
   
+  /*
   @Override
   public synchronized IndexReader reopen() throws CorruptIndexException,
 		IOException {
@@ -293,6 +268,8 @@ public class BoboIndexReader extends FilterAtomicReader
 	// bobo readers are always readonly 
 	return reopen();
   }
+  
+  */
 
   public Object getFacetData(String name){
 	  return _facetDataMap.get(name);
@@ -355,20 +332,7 @@ public class BoboIndexReader extends FilterAtomicReader
   protected void doClose() throws IOException
   {
 	_facetDataMap.clear();
-    if(_srcReader != null) _srcReader.close();
     super.doClose();
-  }
-  
-  @Override
-  protected void doCommit(Map commitUserData) throws IOException
-  {
-    if(_srcReader != null) _srcReader.flush(commitUserData);
-  }
-
-  @Override
-  protected void doDelete(int n) throws  CorruptIndexException, IOException
-  {
-    if(_srcReader != null) _srcReader.deleteDocument(n);
   }
   
   private void loadFacetHandler(String name,
@@ -441,6 +405,7 @@ public class BoboIndexReader extends FilterAtomicReader
    * @return
    * @throws IOException
    */
+  /*
   private static IndexReader[] createSubReaders(IndexReader reader, WorkArea workArea) throws IOException
   {
     List<IndexReader> readerList = new ArrayList<IndexReader>();
@@ -462,12 +427,7 @@ public class BoboIndexReader extends FilterAtomicReader
     }
     return boboReaders;
   }
-  
-  @Override
-  public Directory directory()
-  {
-    return (_subReaders != null ? _subReaders[0].directory() : super.directory());
-  }
+  */
   
   private static Collection<FacetHandler<?>> loadFromIndex(File file,WorkArea workArea) throws IOException
   {
@@ -503,25 +463,7 @@ public class BoboIndexReader extends FilterAtomicReader
   {
     if (facetHandlers == null) // try to load from index
     {
-      Directory idxDir = directory();
-      if (idxDir != null && idxDir instanceof FSDirectory)
-      {
-        FSDirectory fsDir = (FSDirectory) idxDir;
-        File file = fsDir.getFile();
-
-        if (new File(file, SPRING_CONFIG).exists())
-        {
-          facetHandlers = loadFromIndex(file,_workArea);
-        }
-        else
-        {
-          facetHandlers = new ArrayList<FacetHandler<?>>();
-        }
-      }
-      else
-      {
-        facetHandlers = new ArrayList<FacetHandler<?>>();
-      }
+      facetHandlers = new ArrayList<FacetHandler<?>>();
     }
     
     _facetHandlers = facetHandlers;
@@ -531,60 +473,21 @@ public class BoboIndexReader extends FilterAtomicReader
       _facetHandlerMap.put(facetHandler.getName(), facetHandler);
     }
   }
-
-  /**
-   * 
-   * @param reader
-   * @param facetHandlers
-   * @param facetHandlerFactories
-   * @param workArea
-   * @throws IOException
-   */
-  protected BoboIndexReader(IndexReader reader,
-                            Collection<FacetHandler<?>> facetHandlers,
-                            Collection<RuntimeFacetHandlerFactory<?,?>> facetHandlerFactories,
-                            WorkArea workArea) throws IOException
-  {
-    this(reader, facetHandlers, facetHandlerFactories, workArea, true);
-    _srcReader = reader;
-  }
   
   /**
    * @param reader
    * @param facetHandlers
    * @param facetHandlerFactories
    * @param workArea
-   * @param useSubReaders true => we create a MultiReader of all the leaf sub-readers as
    * the inner reader. false => we use the given reader as the inner reader.
    * @throws IOException
    */
-  protected BoboIndexReader(IndexReader reader,
+  protected BoboIndexReader(AtomicReader reader,
                             Collection<FacetHandler<?>> facetHandlers,
                             Collection<RuntimeFacetHandlerFactory<?,?>> facetHandlerFactories,
-                            WorkArea workArea,
-                            boolean useSubReaders) throws IOException
+                            WorkArea workArea) throws IOException
   {
-    super(useSubReaders ? new MultiReader(createSubReaders(reader, workArea), false) : reader);
-    if(useSubReaders)
-    {
-      _dir = reader.directory();
-      BoboIndexReader[] subReaders = (BoboIndexReader[])in.getSequentialSubReaders();
-      if(subReaders != null && subReaders.length > 0)
-      {
-        _subReaders = subReaders;
-        
-        int maxDoc = 0;
-        _starts = new int[_subReaders.length + 1];
-        for (int i = 0; i < _subReaders.length; i++)
-        {
-          _subReaders[i]._dir = _dir;
-          if(facetHandlers != null) _subReaders[i].setFacetHandlers(facetHandlers);
-          _starts[i] = maxDoc;
-          maxDoc += _subReaders[i].maxDoc();
-        }
-        _starts[_subReaders.length] = maxDoc;
-      }
-    }
+    super(reader);
     _runtimeFacetHandlerFactories = facetHandlerFactories;
     _runtimeFacetHandlerFactoryMap = new HashMap<String,RuntimeFacetHandlerFactory<?,?>>();
     if (_runtimeFacetHandlerFactories!=null)
@@ -606,75 +509,12 @@ public class BoboIndexReader extends FilterAtomicReader
   protected void facetInit(Set<String> toBeRemoved) throws IOException
   {
     initialize(_facetHandlers);
-    if(_subReaders == null)
-    {
-      loadFacetHandlers(_workArea, toBeRemoved);  
-    }
-    else
-    {
-      for(BoboIndexReader r : _subReaders)
-      {
-        r.facetInit(toBeRemoved);
-      }
-      
-      for(String name : toBeRemoved)
-      {
-        _facetHandlerMap.remove(name);
-      }
-    }
+    loadFacetHandlers(_workArea, toBeRemoved);
   }
 
   protected void setFacetHandlers(Collection<FacetHandler<?>> facetHandlers)
   {
     _facetHandlers = facetHandlers;
-  }
-  /**
-   * @deprecated use {@link org.apache.lucene.search.MatchAllDocsQuery} instead.
-   * @return query that matches all docs in the index
-   */
-  public Query getFastMatchAllDocsQuery()
-  {
-    return new MatchAllDocsQuery();
-  }
-
-  /**
-   * Utility method to dump out all fields (name and terms) for a given index.
-   * 
-   * @param outFile
-   *          File to dump to.
-   * @throws IOException
-   */
-  public void dumpFields(File outFile) throws IOException
-  {
-    FileWriter writer = null;
-    try
-    {
-      writer = new FileWriter(outFile);
-      PrintWriter out = new PrintWriter(writer);
-      Set<String> fieldNames = getFacetNames();
-      for (String fieldName : fieldNames)
-      {
-        TermEnum te = terms(new Term(fieldName, ""));
-        out.write(fieldName + ":\n");
-        while (te.next())
-        {
-          Term term = te.term();
-          if (!fieldName.equals(term.field()))
-          {
-            break;
-          }
-          out.write(term.text() + "\n");
-        }
-        out.write("\n\n");
-      }
-    }
-    finally
-    {
-      if (writer != null)
-      {
-        writer.close();
-      }
-    }
   }
 
   /**
@@ -701,13 +541,6 @@ public class BoboIndexReader extends FilterAtomicReader
       f = getRuntimeFacetHandler(fieldname);
     return f;
   }
-  
-  
-
-  @Override
-  public IndexReader[] getSequentialSubReaders() {
-	return _subReaders;
-  }
 
 /**
    * Gets the facet handler map
@@ -728,18 +561,8 @@ public class BoboIndexReader extends FilterAtomicReader
     return _runtimeFacetHandlerFactoryMap;
   }
 
-  @Override
-  public Document document(int docid) throws IOException
+  public Document appendFacets(Document doc, int docid) throws IOException
   {
-    if(_subReaders != null)
-    {
-      int readerIndex = readerIndex(docid, _starts, _subReaders.length);
-      BoboIndexReader subReader = _subReaders[readerIndex];
-      return subReader.document(docid - _starts[readerIndex]);
-    }
-    else
-    {
-      Document doc = super.document(docid);
       Collection<FacetHandler<?>> facetHandlers = _facetHandlerMap.values();
       for (FacetHandler<?> facetHandler : facetHandlers)
       {
@@ -764,7 +587,6 @@ public class BoboIndexReader extends FilterAtomicReader
         }
       }
       return doc;
-    }
   }
   
   private static int readerIndex(int n, int[] starts, int numSubReaders)
@@ -823,17 +645,13 @@ public class BoboIndexReader extends FilterAtomicReader
     }
   }
 
-  private BoboIndexReader(IndexReader in)
+  public BoboIndexReader(AtomicReader in)
   {
     super(in);
   }
   
-  public BoboIndexReader copy(IndexReader in)
+  public BoboIndexReader copy(AtomicReader in)
   {
-    if(_subReaders != null)
-    {
-      throw new IllegalStateException("this BoboIndexReader has subreaders");
-    }
     BoboIndexReader copy = new BoboIndexReader(in);
     copy._facetHandlerMap = this._facetHandlerMap;
     copy._facetHandlers = this._facetHandlers;
@@ -841,8 +659,6 @@ public class BoboIndexReader extends FilterAtomicReader
     copy._runtimeFacetHandlerFactoryMap = this._runtimeFacetHandlerFactoryMap;
     copy._workArea = this._workArea;
     copy._facetDataMap.putAll(this._facetDataMap);
-    copy._srcReader = in;
-    copy._starts = this._starts;
     return copy;
   }
 }

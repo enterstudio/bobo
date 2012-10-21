@@ -6,10 +6,10 @@ package com.browseengine.bobo.analysis.section;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * TokenStream for the section meta data. This returns a single token with a payload.
@@ -17,16 +17,16 @@ import org.apache.lucene.index.Payload;
 public final class IntMetaDataTokenStream extends TokenStream
 {
   private final String _tokenText;
-  private final TermAttribute _termAttribute;
+  private final CharTermAttribute _termAttribute;
   private final OffsetAttribute _offsetAttribute;
   private final PayloadAttribute _payloadAtt;
-  private Payload _payload;  
+  private BytesRef _payload;  
   private boolean _returnToken = false;
 
   public IntMetaDataTokenStream(String tokenText)
   {
     _tokenText = tokenText;
-    _termAttribute = (TermAttribute)addAttribute(TermAttribute.class);
+    _termAttribute = (CharTermAttribute)addAttribute(CharTermAttribute.class);
     _offsetAttribute = (OffsetAttribute)addAttribute(OffsetAttribute.class);
     _payloadAtt = (PayloadAttribute)addAttribute(PayloadAttribute.class);
   }
@@ -49,7 +49,7 @@ public final class IntMetaDataTokenStream extends TokenStream
       buf[i++] = (byte)(datum >>> 24);
     }
     
-    _payload = new Payload(buf);
+    _payload = new BytesRef(buf);
     _returnToken = true;
   }
 
@@ -60,7 +60,8 @@ public final class IntMetaDataTokenStream extends TokenStream
   {
     if(_returnToken)
     {
-      _termAttribute.setTermBuffer(_tokenText);
+      char[] chars = _tokenText.toCharArray();
+      _termAttribute.copyBuffer(chars, 0, chars.length);
       _offsetAttribute.setOffset(0, 0);
       _payloadAtt.setPayload(_payload);
       _returnToken = false;

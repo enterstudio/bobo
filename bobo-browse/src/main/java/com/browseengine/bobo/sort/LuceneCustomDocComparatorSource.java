@@ -2,7 +2,7 @@ package com.browseengine.bobo.sort;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
@@ -16,9 +16,9 @@ public class LuceneCustomDocComparatorSource extends DocComparatorSource {
 	}
 	
 	@Override
-	public DocComparator getComparator(IndexReader reader, int docbase)
+	public DocComparator getComparator(AtomicReader reader, int docbase)
 			throws IOException {
-		_luceneComparator.setNextReader(reader, docbase);
+		_luceneComparator.setNextReader(reader.getContext());
 		return new DocComparator() {
 			
 			@Override

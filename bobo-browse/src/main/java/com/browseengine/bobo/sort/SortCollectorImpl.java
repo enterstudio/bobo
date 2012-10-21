@@ -18,15 +18,18 @@ import java.util.Set;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.Browsable;
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.BrowseHit;
-import com.browseengine.bobo.api.BrowseHit.TermFrequencyVector;
+import com.browseengine.bobo.api.BrowseHit.TermFrequencyPair;
 import com.browseengine.bobo.api.FacetAccessible;
 import com.browseengine.bobo.api.FacetSpec;
 import com.browseengine.bobo.facets.CombinedFacetAccessible;
@@ -483,14 +486,26 @@ public class SortCollectorImpl extends SortCollector {
         hit.setStoredFields(reader.document(fdoc.doc));
       }
       if (termVectorsToFetch!=null && termVectorsToFetch.size()>0){
-        Map<String,TermFrequencyVector> tvMap = new HashMap<String,TermFrequencyVector>();
+        Map<String,List<TermFrequencyPair>> tvMap = new HashMap<String,List<TermFrequencyPair>>();
         hit.setTermFreqMap(tvMap);
         for (String field : termVectorsToFetch){
-          TermFreqVector tv = reader.getTermFreqVector(fdoc.doc, field);
-          if (tv!=null){
-            int[] freqs = tv.getTermFrequencies();
-            String[] terms = tv.getTerms();
-            tvMap.put(field, new TermFrequencyVector(terms, freqs));
+          
+          Terms terms = reader.getTermVector(fdoc.doc, field);
+          
+          if (terms!=null){
+            TermsEnum termsEnum = null;
+            
+            termsEnum = terms.iterator(termsEnum);
+            
+            BytesRef termBytes;
+            List<TermFrequencyPair> termVector = new LinkedList<TermFrequencyPair>();
+            while((termBytes = termsEnum.next()) != null){
+              String termText = termBytes.utf8ToString();
+              int count = termsEnum.docFreq();
+              termVector.add(new TermFrequencyPair(termText,count));
+            }
+            
+            tvMap.put(field, termVector);
           }
         }
       }

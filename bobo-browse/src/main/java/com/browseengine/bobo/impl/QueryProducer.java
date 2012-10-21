@@ -43,9 +43,9 @@ public class QueryProducer{
 			return null;
 		}
 		else{
-			Analyzer analyzer=new StandardAnalyzer(Version.LUCENE_CURRENT);
+			Analyzer analyzer=new StandardAnalyzer(Version.LUCENE_40);
 			if (defaultField==null) defaultField="contents";
-			return new QueryParser(Version.LUCENE_CURRENT,defaultField, analyzer).parse(queryString);
+			return new QueryParser(Version.LUCENE_40,defaultField, analyzer).parse(queryString);
 		}
 	}
 

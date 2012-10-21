@@ -3,7 +3,7 @@ package com.browseengine.bobo.sort;
 import java.io.IOException;
 import java.io.Serializable;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.ScoreDoc;
 
 public class ReverseDocComparatorSource extends DocComparatorSource {
@@ -13,7 +13,7 @@ public class ReverseDocComparatorSource extends DocComparatorSource {
 	}
 
 	@Override
-	public DocComparator getComparator(IndexReader reader, int docbase)
+	public DocComparator getComparator(AtomicReader reader, int docbase)
 			throws IOException {
 		return new ReverseDocComparator(_inner.getComparator(reader, docbase));
 	}

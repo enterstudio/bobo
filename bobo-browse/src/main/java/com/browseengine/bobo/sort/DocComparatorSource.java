@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.StringIndex;
+import org.apache.lucene.search.FieldCache.DocTerms;
+import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.util.BytesRef;
 
 public abstract class DocComparatorSource {
 	
@@ -22,7 +24,7 @@ public abstract class DocComparatorSource {
 		return _reverse;
 	}
 	
-	public abstract DocComparator getComparator(IndexReader reader,int docbase)
+	public abstract DocComparator getComparator(AtomicReader reader,int docbase)
 			throws IOException;
 
 	public static class IntDocComparatorSource extends DocComparatorSource {
@@ -32,10 +34,10 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final int[] values = FieldCache.DEFAULT.getInts(reader, field);
+			final int[] values = FieldCache.DEFAULT.getInts(reader, field,false);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
@@ -56,40 +58,6 @@ public abstract class DocComparatorSource {
 		}
 	}
 	
-	public static class StringLocaleComparatorSource extends DocComparatorSource {
-		private final String field;
-		private final Collator _collator;
-
-		public StringLocaleComparatorSource(String field,Locale locale) {
-			this.field = field;
-			_collator = Collator.getInstance(locale);
-		}
-
-		public DocComparator getComparator(IndexReader reader,int docbase)
-				throws IOException {
-
-			final String[] values = FieldCache.DEFAULT.getStrings(reader, field);
-
-			return new DocComparator() {
-				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
-				    if (values[doc1.doc] == null) {
-				      if (values[doc2.doc] == null) {
-				        return 0;
-				      }
-				      return -1;
-				    } else if (values[doc2.doc] == null) {
-				      return 1;
-				    }				   
-				    return _collator.compare(values[doc1.doc], values[doc2.doc]);
-				}
-
-				public String value(ScoreDoc doc) {
-					return values[doc.doc];
-				}
-			};
-		}
-	}
-	
 	public static class StringValComparatorSource extends DocComparatorSource {
 		private final String field;
 
@@ -97,26 +65,31 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final String[] values = FieldCache.DEFAULT.getStrings(reader, field);
+			final DocTerms values = FieldCache.DEFAULT.getTerms(reader, field);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
-				    if (values[doc1.doc] == null) {
-				      if (values[doc2.doc] == null) {
+				    if (!values.exists(doc1.doc)) {
+				      if (!values.exists(doc2.doc)) {
 				        return 0;
 				      }
 				      return -1;
-				    } else if (values[doc2.doc] == null) {
+				    } else if (!values.exists(doc2.doc)) {
 				      return 1;
 				    }				   
-				    return values[doc1.doc].compareTo(values[doc2.doc]);
+				    BytesRef bytesRef = new BytesRef();
+			      BytesRef bytesRef2 = new BytesRef();
+			      
+			      bytesRef = values.getTerm(doc1.doc, bytesRef);
+			      bytesRef2 = values.getTerm(doc2.doc, bytesRef2);
+            return bytesRef.compareTo(bytesRef2);
 				}
 
-				public String value(ScoreDoc doc) {
-					return values[doc.doc];
+				public BytesRef value(ScoreDoc doc) {
+				  return values.getTerm(doc.doc, new BytesRef());
 				}
 			};
 		}
@@ -129,18 +102,21 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final StringIndex values = FieldCache.DEFAULT.getStringIndex(reader, field);
+			final DocTermsIndex values = FieldCache.DEFAULT.getTermsIndex(reader, field);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
-					return values.order[doc1.doc] -  values.order[doc2.doc];
+				  int ord1 = values.getOrd(doc1.doc);
+				  int ord2 = values.getOrd(doc2.doc);
+					return ord1 - ord2;
 				}
 
-				public String value(ScoreDoc doc) {
-					return String.valueOf(values.lookup[values.order[doc.doc]]);
+				public BytesRef value(ScoreDoc doc) {
+				  int ord = values.getOrd(doc.doc);
+				  return values.lookup(ord, new BytesRef());
 				}
 			};
 		}
@@ -153,10 +129,10 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final short[] values = FieldCache.DEFAULT.getShorts(reader, field);
+			final short[] values = FieldCache.DEFAULT.getShorts(reader, field, false);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
@@ -177,10 +153,10 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final long[] values = FieldCache.DEFAULT.getLongs(reader, field);
+			final long[] values = FieldCache.DEFAULT.getLongs(reader, field, false);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
@@ -208,10 +184,10 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final float[] values = FieldCache.DEFAULT.getFloats(reader, field);
+			final float[] values = FieldCache.DEFAULT.getFloats(reader, field, false);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
@@ -239,10 +215,10 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final double[] values = FieldCache.DEFAULT.getDoubles(reader, field);
+			final double[] values = FieldCache.DEFAULT.getDoubles(reader, field, false);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {
@@ -267,7 +243,7 @@ public abstract class DocComparatorSource {
 		public RelevanceDocComparatorSource() {
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
 			return new DocComparator() {
@@ -295,7 +271,7 @@ public abstract class DocComparatorSource {
 		public DocIdDocComparatorSource() {
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
 			final int _docbase = docbase;
@@ -319,10 +295,10 @@ public abstract class DocComparatorSource {
 			this.field = field;
 		}
 
-		public DocComparator getComparator(IndexReader reader,int docbase)
+		public DocComparator getComparator(AtomicReader reader,int docbase)
 				throws IOException {
 
-			final byte[] values = FieldCache.DEFAULT.getBytes(reader, field);
+			final byte[] values = FieldCache.DEFAULT.getBytes(reader, field,false);
 
 			return new DocComparator() {
 				public int compare(ScoreDoc doc1, ScoreDoc doc2) {

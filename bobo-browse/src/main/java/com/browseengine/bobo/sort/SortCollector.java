@@ -3,7 +3,6 @@ package com.browseengine.bobo.sort;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.Locale;
 import java.util.Set;
 
 import javax.management.MBeanServer;
@@ -129,10 +128,6 @@ public abstract class SortCollector extends Collector {
 	
 	private static DocComparatorSource getNonFacetComparatorSource(SortField sf){
 		String fieldname = sf.getField();
-		Locale locale = sf.getLocale();
-		if (locale != null) {
-	      return new DocComparatorSource.StringLocaleComparatorSource(fieldname, locale);
-		}
 	
 		Type type = sf.getType();
 

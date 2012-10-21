@@ -2,6 +2,8 @@ package com.browseengine.bobo.facets.filter;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.Bits;
+
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
@@ -23,7 +25,7 @@ public class EmptyFilter extends RandomAccessFilter
 	  }
 	 
 	@Override
-	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException 
+	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader,Bits acceptDocs) throws IOException 
 	{
 		return EmptyDocIdSet.getInstance();
 	}

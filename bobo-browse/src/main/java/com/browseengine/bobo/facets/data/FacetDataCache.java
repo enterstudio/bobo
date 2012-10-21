@@ -7,10 +7,9 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.ScoreDoc;
 
 import com.browseengine.bobo.api.BoboIndexReader;
@@ -235,7 +234,7 @@ public class FacetDataCache<T> implements Serializable {
     }
 
     @Override
-    public DocComparator getComparator(IndexReader reader, int docbase) throws IOException {
+    public DocComparator getComparator(AtomicReader reader, int docbase) throws IOException {
       if (!(reader instanceof BoboIndexReader))
         throw new IllegalStateException("reader not instance of " + BoboIndexReader.class);
       BoboIndexReader boboReader = (BoboIndexReader) reader;

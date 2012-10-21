@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
@@ -63,7 +64,7 @@ public class BrowseServiceFactory {
             
         IndexReader reader=null;
         try{
-            reader=IndexReader.open(idxDir,true);
+            reader=DirectoryReader.open(idxDir);
         }
         catch(IOException ioe){
             throw new BrowseException(ioe.getMessage(),ioe);

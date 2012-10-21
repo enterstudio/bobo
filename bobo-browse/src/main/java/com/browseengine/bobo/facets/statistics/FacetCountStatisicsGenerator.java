@@ -1,28 +1,7 @@
 package com.browseengine.bobo.facets.statistics;
 
-import java.io.File;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
-
-import com.browseengine.bobo.api.BoboBrowser;
-import com.browseengine.bobo.api.BoboIndexReader;
-import com.browseengine.bobo.api.BrowseFacet;
-import com.browseengine.bobo.api.BrowseRequest;
-import com.browseengine.bobo.api.BrowseResult;
-import com.browseengine.bobo.api.FacetAccessible;
-import com.browseengine.bobo.api.FacetSpec;
-import com.browseengine.bobo.api.FacetSpec.FacetSortSpec;
 import com.browseengine.bobo.facets.FacetCountCollector;
 
 public abstract class FacetCountStatisicsGenerator
@@ -91,64 +70,4 @@ public abstract class FacetCountStatisicsGenerator
   {
     return generateStatistic(countHitCollector.getCountDistribution(),n);
   } 
-  
-  public static void main(String[] args) throws Exception
-  {
-    Directory idxDir = FSDirectory.open(new File("/Users/jwang/dataset/facet_idx_2/beef"));
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT,"b",new StandardAnalyzer(Version.LUCENE_CURRENT));
-    String q = "pc:yahoo";
-    Query query = qp.parse(q);
-    
-    
-    BrowseRequest req = new BrowseRequest();
-    req.setQuery(query);
-    
-    FacetSpec fspec = new FacetSpec();
-    fspec.setExpandSelection(true);
-    fspec.setMaxCount(5);
-    fspec.setOrderBy(FacetSortSpec.OrderHitsDesc);
-    
-    req.setFacetSpec("ccid", fspec);
-    req.setFacetSpec("pcid", fspec);
-    req.setFacetSpec("education_id", fspec);
-    req.setFacetSpec("geo_region", fspec);
-    req.setFacetSpec("geo_country", fspec);
-    req.setFacetSpec("industry", fspec);
-    req.setFacetSpec("proposal_accepts", fspec);
-    req.setFacetSpec("num_endorsers", fspec);
-    req.setFacetSpec("group_id", fspec);
-    
-    BoboIndexReader reader = BoboIndexReader.getInstance(IndexReader.open(idxDir));
-    BoboBrowser browser = new BoboBrowser(reader);
-    
-    BrowseResult res = browser.browse(req);
-    
-    Map<String,FacetAccessible> facetMap = res.getFacetMap();
-    Collection<FacetAccessible> facetCountCollectors = facetMap.values();
-    Iterator<FacetAccessible> iter = facetCountCollectors.iterator();
-    while (iter.hasNext())
-    {
-      FacetAccessible f = iter.next();
-      if (f instanceof FacetCountCollector)
-      {
-        System.out.println("====================================");
-        FacetCountCollector fc = (FacetCountCollector)f;
-        int[] dist = fc.getCountDistribution();
-        if (dist!=null)
-        {
-          ChiSquaredFacetCountStatisticsGenerator gen = new ChiSquaredFacetCountStatisticsGenerator();
-          gen.setMinCount(0);
-          FacetCountStatistics stats = gen.generateStatistic(dist, 0);
-          System.out.println("stat for field "+fc.getName()+": "+stats);
-          System.out.println("Centered distribution score: " + (stats.getDistribution()-(double)(stats.getNumSamplesCollected()-1))/Math.sqrt((2.0*(double)(stats.getNumSamplesCollected()-1))));
-          System.out.println("........................");
-          List<BrowseFacet> facetList = fc.getFacets();
-          System.out.println(facetList);
-          System.out.println("........................");
-        }
-        System.out.println("====================================");
-      }
-    }
-    reader.close();
-  }
 }

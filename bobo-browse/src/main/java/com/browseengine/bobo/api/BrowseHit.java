@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,15 +19,15 @@ public class BrowseHit
 {
 	private static final long serialVersionUID = 1L;
 	
-	public static class TermFrequencyVector implements Serializable{
+	public static class TermFrequencyPair implements Serializable{
 
 	  private static final long serialVersionUID = 1L;
-	  public final String[] terms;
-	  public final int[] freqs;
+	  public final String term;
+	  public final int freq;
 	  
-	  public TermFrequencyVector(String[] terms,int[] freqs){
-	    this.terms = terms;
-	    this.freqs = freqs;
+	  public TermFrequencyPair(String term,int freq){
+	    this.term = term;
+	    this.freq = freq;
 	  }
 	}
 
@@ -116,13 +117,13 @@ public class BrowseHit
   private BrowseHit[] _groupHits;
 	private Explanation _explanation;
 	
-	private Map<String,TermFrequencyVector> _termFreqMap = new HashMap<String,TermFrequencyVector>();
+	private Map<String,List<TermFrequencyPair>> _termFreqMap = new HashMap<String,List<TermFrequencyPair>>();
 	
-	public Map<String,TermFrequencyVector> getTermFreqMap(){
+	public Map<String,List<TermFrequencyPair>> getTermFreqMap(){
 	  return _termFreqMap;
 	}
 	
-	public BrowseHit setTermFreqMap(Map<String, TermFrequencyVector> termFreqMap){
+	public BrowseHit setTermFreqMap(Map<String, List<TermFrequencyPair>> termFreqMap){
 	  _termFreqMap = termFreqMap;
     return this;
 	}

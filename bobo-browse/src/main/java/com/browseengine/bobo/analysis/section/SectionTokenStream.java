@@ -8,7 +8,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * This class augments a token stream by attaching a section id as payloads.
@@ -16,7 +16,7 @@ import org.apache.lucene.index.Payload;
  */
 public final class SectionTokenStream extends TokenFilter
 {
-  private Payload _payload;
+  private BytesRef _payload;
   private PayloadAttribute _payloadAtt;
   
   public SectionTokenStream(TokenStream tokenStream, int sectionId)
@@ -36,7 +36,7 @@ public final class SectionTokenStream extends TokenFilter
     return false;
   }
 
-  static public Payload encodeIntPayload(int id)
+  static public BytesRef encodeIntPayload(int id)
   {
     byte[] data = new byte[4];
     int off = data.length;
@@ -48,12 +48,12 @@ public final class SectionTokenStream extends TokenFilter
     }
     while(id > 0);
     
-    return new Payload(data, off, data.length - off);
+    return new BytesRef(data, off, data.length - off);
   }
   
-  static public int decodeIntPayload(Payload payload)
+  static public int decodeIntPayload(BytesRef payload)
   {
-    return decodeIntPayload(payload.getData(), payload.getOffset(), payload.length());
+    return decodeIntPayload(payload.bytes, payload.offset, payload.length);
   }
   
   static public int decodeIntPayload(byte[] data, int off, int len)
