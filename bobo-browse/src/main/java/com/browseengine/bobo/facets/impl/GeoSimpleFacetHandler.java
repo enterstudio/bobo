@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.ScoreDoc;
 
 import com.browseengine.bobo.api.BoboIndexReader;
@@ -203,7 +203,7 @@ public class GeoSimpleFacetHandler extends RuntimeFacetHandler<FacetDataNone> {
 		}
 
 		@Override                                                                                                                   
-		public DocComparator getComparator(IndexReader reader, int docbase)                                                         
+		public DocComparator getComparator(AtomicReader reader, int docbase)                                                         
 		throws IOException {                                                                                                      
 			if (!(reader instanceof BoboIndexReader)) throw new IllegalStateException("reader not instance of "+BoboIndexReader.class);
 			BoboIndexReader boboReader = (BoboIndexReader)reader;                                                                      

@@ -8,11 +8,9 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -444,7 +442,7 @@ public class MultiValueFacetDataCache<T> extends FacetDataCache<T>
 		}
 		
 		@Override
-		public DocComparator getComparator(final IndexReader reader, int docbase)
+		public DocComparator getComparator(final AtomicReader reader, int docbase)
 				throws IOException {
 			if (!(reader instanceof BoboIndexReader)) throw new IllegalStateException("reader must be instance of "+BoboIndexReader.class);
 			BoboIndexReader boboReader = (BoboIndexReader)reader;

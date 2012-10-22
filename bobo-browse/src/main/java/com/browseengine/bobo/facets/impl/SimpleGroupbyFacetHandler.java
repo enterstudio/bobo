@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.ScoreDoc;
 
 import com.browseengine.bobo.api.BoboIndexReader;
@@ -19,8 +19,8 @@ import com.browseengine.bobo.api.BrowseSelection;
 import com.browseengine.bobo.api.ComparatorFactory;
 import com.browseengine.bobo.api.FacetIterator;
 import com.browseengine.bobo.api.FacetSpec;
-import com.browseengine.bobo.api.FieldValueAccessor;
 import com.browseengine.bobo.api.FacetSpec.FacetSortSpec;
+import com.browseengine.bobo.api.FieldValueAccessor;
 import com.browseengine.bobo.facets.FacetCountCollector;
 import com.browseengine.bobo.facets.FacetCountCollectorSource;
 import com.browseengine.bobo.facets.FacetHandler;
@@ -116,7 +116,7 @@ public class SimpleGroupbyFacetHandler extends FacetHandler<FacetDataNone> {
     return new DocComparatorSource(){
 
       @Override
-      public DocComparator getComparator(IndexReader reader, int docbase)
+      public DocComparator getComparator(AtomicReader reader, int docbase)
       throws IOException {
         ArrayList<DocComparator> comparatorList = new ArrayList<DocComparator>(_fieldsSet.size());
         for (FacetHandler<?> handler : _facetHandlers){

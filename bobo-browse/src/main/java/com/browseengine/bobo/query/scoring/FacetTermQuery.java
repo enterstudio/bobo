@@ -6,23 +6,21 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.Similarity;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseSelection;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.facets.filter.RandomAccessFilter;
-import com.browseengine.bobo.query.MatchAllDocIdSetIterator;
 
 public class FacetTermQuery extends Query {
 	/**
@@ -215,7 +213,7 @@ public class FacetTermQuery extends Query {
 		}
 
 		@Override
-		public Scorer scorer(IndexReader reader,boolean scoreDocsInOrder,boolean topScorer) throws IOException {
+		public Scorer scorer(AtomicReader reader,boolean scoreDocsInOrder,boolean topScorer) throws IOException {
 			if (reader instanceof BoboIndexReader){
 			  BoboIndexReader boboReader = (BoboIndexReader)reader;
 			  TermDocs termDocs = boboReader.termDocs(null);

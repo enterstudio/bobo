@@ -76,7 +76,7 @@ public class RecencyBoostScorerBuilder implements ScorerBuilder {
 		    FacetDataCache<Long> facetDataCache = (FacetDataCache<Long>)(boboReader.getFacetData(_timeFacetName));
 		    final BigSegmentedArray orderArray = facetDataCache.orderArray;
 		    final TermLongList termList = (TermLongList)facetDataCache.valArray;
-		    return new Scorer(innerScorer.getSimilarity()){
+		    return new Scorer(innerScorer.getWeight()){
 			  
 			
 			  @Override
@@ -101,6 +101,11 @@ public class RecencyBoostScorerBuilder implements ScorerBuilder {
 			  public int nextDoc() throws IOException {
 				return innerScorer.nextDoc();
 			  }
+
+        @Override
+        public float freq() throws IOException {
+          return innerScorer.freq();
+        }
 			  
 			  
 		    };

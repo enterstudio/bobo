@@ -7,7 +7,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Weight;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.facets.FacetHandler;
@@ -36,7 +36,7 @@ public class FacetBasedBoostScorerBuilder implements ScorerBuilder
   {
     if(!(reader instanceof BoboIndexReader)) throw new IllegalArgumentException("IndexReader is not BoboIndexReader");
     
-    return new FacetBasedBoostingScorer((BoboIndexReader)reader, innerScorer.getSimilarity(), innerScorer);
+    return new FacetBasedBoostingScorer((BoboIndexReader)reader, innerScorer.getWeight(), innerScorer);
   }
   
   public Explanation explain(IndexReader indexReader, int docid, Explanation innerExplaination) throws IOException
@@ -78,9 +78,9 @@ public class FacetBasedBoostScorerBuilder implements ScorerBuilder
     
     private int _docid;
     
-    public FacetBasedBoostingScorer(BoboIndexReader reader, Similarity similarity, Scorer innerScorer)
+    public FacetBasedBoostingScorer(BoboIndexReader reader, Weight weight, Scorer innerScorer)
     {
-      super(similarity);
+      super(weight);
       _innerScorer = innerScorer;
             
       ArrayList<BoboDocScorer> list = new ArrayList<BoboDocScorer>();
@@ -129,6 +129,11 @@ public class FacetBasedBoostScorerBuilder implements ScorerBuilder
     public int advance(int target) throws IOException
     {
       return (_docid = _innerScorer.advance(target));
+    }
+
+    @Override
+    public float freq() throws IOException {
+      return _innerScorer.freq();
     }
   }
 }
