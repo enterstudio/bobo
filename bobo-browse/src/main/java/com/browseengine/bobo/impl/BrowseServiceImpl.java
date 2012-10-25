@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -69,13 +70,13 @@ public class BrowseServiceImpl implements BrowseService {
 	}
 	
 	public static BoboIndexReader newIndexReader(Directory idxDir) throws IOException{
-        if (!IndexReader.indexExists(idxDir)) {
+        if (!DirectoryReader.indexExists(idxDir)) {
                 return null;
         }
         
         long start=System.currentTimeMillis();
         
-        IndexReader ir = IndexReader.open(idxDir,true);
+        IndexReader ir = DirectoryReader.open(idxDir);
         BoboIndexReader reader;
         
         try {

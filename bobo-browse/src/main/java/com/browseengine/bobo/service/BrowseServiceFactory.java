@@ -54,7 +54,7 @@ public class BrowseServiceFactory {
 	
 	public static BoboIndexReader getBoboIndexReader(Directory idxDir) throws BrowseException{
 	  try{
-        if (!BoboIndexReader.indexExists(idxDir)){
+        if (!DirectoryReader.indexExists(idxDir)){
             throw new BrowseException("Index does not exist at: "+idxDir);
         }
         }

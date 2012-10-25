@@ -4,12 +4,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.FSDirectory;
 
 import com.browseengine.bobo.api.BoboBrowser;
 import com.browseengine.bobo.api.BoboIndexReader;
-import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
 
@@ -58,7 +58,7 @@ public class BoboService{
 	
 	public void start() throws IOException
 	{
-		IndexReader reader=IndexReader.open(FSDirectory.open(_idxDir),true);
+		IndexReader reader=DirectoryReader.open(FSDirectory.open(_idxDir));
 		try
 		{
 			_boboReader=BoboIndexReader.getInstance(reader);
