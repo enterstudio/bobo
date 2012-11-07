@@ -89,7 +89,7 @@ public class FacetDataCache<T> implements Serializable {
     return ret;
   }
 
-  public void load(String fieldName, IndexReader reader, TermListFactory<T> listFactory) throws IOException {
+  public void load(String fieldName, AtomicReader reader, TermListFactory<T> listFactory) throws IOException {
     String field = fieldName.intern();
     int maxDoc = reader.maxDoc();
 

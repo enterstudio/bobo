@@ -11,9 +11,8 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -274,7 +273,7 @@ public class CompactMultiValueFacetHandler extends FacetHandler<FacetDataCache>
     }
 
     @Override
-    public DocComparator getComparator(final IndexReader reader, int docbase)
+    public DocComparator getComparator(final AtomicReader reader, int docbase)
         throws IOException {
       if (!(reader instanceof BoboIndexReader))
         throw new IllegalStateException("reader must be instance of "

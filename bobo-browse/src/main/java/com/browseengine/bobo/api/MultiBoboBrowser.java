@@ -15,11 +15,10 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.Similarity;
 
 import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.sort.SortCollector;
@@ -28,18 +27,18 @@ import com.browseengine.bobo.sort.SortCollector;
 /**
  * Provides implementation of Browser for multiple Browser instances
  */
-public class MultiBoboBrowser extends MultiSearcher implements Browsable,Closeable
+public class MultiBoboBrowser extends MultiSearcher implements Closeable
 {
   private static Logger logger = Logger.getLogger(MultiBoboBrowser.class);
   
-  protected final Browsable[] _subBrowsers;
+  protected final BoboBrowser[] _subBrowsers;
   /**
    * 
    * @param browsers
    *          Browsers to search on
    * @throws IOException
    */
-  public MultiBoboBrowser(Browsable[] browsers) throws IOException
+  public MultiBoboBrowser(BoboBrowser[] browsers) throws IOException
   {
     super(browsers);
     _subBrowsers = browsers;
@@ -77,7 +76,7 @@ public class MultiBoboBrowser extends MultiSearcher implements Browsable,Closeab
         matchAllDocsQuery.setBoost(0f);
         q = QueriesSupport.combineAnd(matchAllDocsQuery, q);        
       }
-      w = createWeight(q);
+      w = q.createWeight(this);
     }
     catch (Exception ioe)
     {

@@ -3,7 +3,9 @@ package com.browseengine.bobo.api;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,8 +15,6 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
@@ -39,7 +39,7 @@ import com.browseengine.bobo.sort.SortCollector;
 /**
  * This class implements the browsing functionality.
  */
-public class BoboSubBrowser extends BoboSearcher2 implements Browsable,Closeable
+public class BoboSubBrowser extends BoboSearcher2 implements Closeable
 {
   private static Logger                   logger = Logger.getLogger(BoboSubBrowser.class);
   
@@ -178,7 +178,7 @@ public class BoboSubBrowser extends BoboSearcher2 implements Browsable,Closeable
       {
         q = new MatchAllDocsQuery();
       }
-      w = createWeight(q);
+      w = q.createWeight(this);
     }
     catch (IOException ioe)
     {
@@ -356,7 +356,7 @@ public class BoboSubBrowser extends BoboSearcher2 implements Browsable,Closeable
           {
             q = new MatchAllDocsQuery();
           }
-          weight = createWeight(q);
+          weight = q.createWeight(this);
         }
         search(weight, finalFilter, collector, start, req.getMapReduceWrapper());
       }
@@ -508,22 +508,7 @@ public class BoboSubBrowser extends BoboSearcher2 implements Browsable,Closeable
       logger.warn("facet handler: " + fieldname
           + " not defined, looking at stored field.");
       // this is not predefined, so it will be slow
-      Document doc = _reader.document(docid, new FieldSelector()
-      {
-        private static final long serialVersionUID = 1L;
-
-        public FieldSelectorResult accept(String field)
-        {
-          if (fieldname.equals(field))
-          {
-            return FieldSelectorResult.LOAD_AND_BREAK;
-          }
-          else
-          {
-            return FieldSelectorResult.NO_LOAD;
-          }
-        }
-      });
+      Document doc = _reader.document(docid, new HashSet<String>(Arrays.asList(fieldname)));
       return doc.getValues(fieldname);
     }
   }
@@ -542,6 +527,5 @@ public class BoboSubBrowser extends BoboSearcher2 implements Browsable,Closeable
       _reader.clearRuntimeFacetData();
       _reader.clearRuntimeFacetHandler();
     }
-    super.close();
   }
 }

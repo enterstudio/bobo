@@ -5,14 +5,16 @@ package com.browseengine.bobo.search.section;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Bits;
 
 /**
  *
@@ -30,9 +32,9 @@ public class SectionSearchQuery extends Query
     float _weight;
     Similarity _similarity;
 
-    public SectionSearchWeight(Searcher searcher) throws IOException
+    public SectionSearchWeight(Similarity similarity) throws IOException
     {
-      _similarity = getSimilarity(searcher);
+      _similarity = similarity;
     }
 
     public String toString()
@@ -62,7 +64,7 @@ public class SectionSearchQuery extends Query
       _weight *= queryNorm;
     }
 
-    public Scorer scorer(IndexReader reader) throws IOException
+    public Scorer scorer(AtomicReader reader,Bits accepted) throws IOException
     {
       SectionSearchScorer scorer = new SectionSearchScorer(_similarity, getValue(), reader);
       
@@ -70,7 +72,7 @@ public class SectionSearchQuery extends Query
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException
+    public Explanation explain(AtomicReaderContext readerCtx, int doc) throws IOException
     {
       Explanation result = new Explanation();
       result.setValue(_weight);
@@ -80,9 +82,11 @@ public class SectionSearchQuery extends Query
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException
     {
-      return scorer(reader);
+      AtomicReader reader = context.reader();
+      return scorer(reader,acceptDocs);
     }
   }
 
