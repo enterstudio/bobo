@@ -7,16 +7,18 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 import com.browseengine.bobo.facets.FacetCountCollector;
@@ -27,14 +29,14 @@ public class BoboSearcher2 extends IndexSearcher{
   protected List<FacetHitCollector> _facetCollectors;
   protected BoboIndexReader[] _subReaders;
   protected int[] _docStarts;
+  private final AtomicReaderContext[] readerContexts;
 
-  public BoboSearcher2(BoboIndexReader reader)
+  public BoboSearcher2(BoboCompositeReader reader)
   {
     super(reader);
+    readerContexts = reader.getContext().leaves().toArray(new AtomicReaderContext[0]);
     _facetCollectors = new LinkedList<FacetHitCollector>();
-    List<IndexReader> readerList = new ArrayList<IndexReader>();
-    ReaderUtil.gatherSubReaders(readerList, reader);
-    _subReaders = (BoboIndexReader[])readerList.toArray(new BoboIndexReader[readerList.size()]);
+    _subReaders = reader.getSubreaders();
     _docStarts = new int[_subReaders.length];
     int maxDoc = 0;
     for (int i=0;i<_subReaders.length;++i){
@@ -91,11 +93,12 @@ public class BoboSearcher2 extends IndexSearcher{
     public abstract boolean validate(final int docid)
     throws IOException;
 
-    public void setNextReader(BoboIndexReader reader,int docBase) throws IOException{
+    public void setNextReader(AtomicReaderContext readerCtx) throws IOException{
       ArrayList<FacetCountCollector> collectorList = new ArrayList<FacetCountCollector>();
+      BoboIndexReader reader = (BoboIndexReader)readerCtx.reader();
       sortPostCollectors(reader);
       for (int i=0;i<_collectors.length;++i){
-        _collectors[i].setNextReader(reader, docBase);
+        _collectors[i].setNextReader(reader, readerCtx.docBase);
         FacetCountCollector collector = _collectors[i]._currentPointers.facetCountCollector;
         if(collector != null)
         {
@@ -231,9 +234,7 @@ public class BoboSearcher2 extends IndexSearcher{
   }
 
   
-  protected FacetValidator createFacetValidator() throws IOException
-  {
-
+  protected FacetValidator createFacetValidator() throws IOException {
     FacetHitCollector[] collectors = new FacetHitCollector[_facetCollectors.size()];
     FacetCountCollectorSource[] countCollectors = new FacetCountCollectorSource[collectors.length];
     int numPostFilters;
@@ -269,57 +270,54 @@ public class BoboSearcher2 extends IndexSearcher{
   }
 
   @Override
-  public void search(Weight weight, Filter filter, Collector collector) throws IOException
+  public void search(Query query, Filter filter, Collector collector) throws IOException
   {
-    search(weight, filter, collector, 0, null);
+    search(query, filter, collector, 0, null);
   }
 
-  public void search(Weight weight, Filter filter, Collector collector, int start, BoboMapFunctionWrapper mapReduceWrapper) throws IOException
+  public void search(Query query, Filter filter, Collector collector, int start, BoboMapFunctionWrapper mapReduceWrapper) throws IOException
   {
     final FacetValidator validator = createFacetValidator();
     int target = 0;
     
+    Weight weight = query.createWeight(this);
     if (filter == null)
     {
-      for (int i = 0; i < _subReaders.length; i++) { // search each subreader
-        int docStart = start + _docStarts[i];
-      collector.setNextReader(_subReaders[i], docStart);
-      validator.setNextReader(_subReaders[i], docStart);
+      for (int i = 0; i < readerContexts.length; i++) { // search each subreader
+        AtomicReader subReader = readerContexts[i].reader();
+     
+        collector.setNextReader(readerContexts[i]);
+        validator.setNextReader(readerContexts[i]);
       
-      
-      Scorer scorer = weight.scorer(_subReaders[i], true, true);
-      if (scorer != null) {
-        
-    	collector.setScorer(scorer);
-        target = scorer.nextDoc();
-        while(target!=DocIdSetIterator.NO_MORE_DOCS)
-        {
-          if(validator.validate(target))
-          {
-            collector.collect(target);
-            target = scorer.nextDoc();
-          }
-          else
-          {
-            target = validator._nextTarget;
-            target = scorer.advance(target);
+        Scorer scorer = weight.scorer(readerContexts[i], true, true, subReader.getLiveDocs());
+        if (scorer != null) {
+    	    collector.setScorer(scorer);
+          target = scorer.nextDoc();
+          while(target!=DocIdSetIterator.NO_MORE_DOCS) {
+            if(validator.validate(target)) {
+              collector.collect(target);
+              target = scorer.nextDoc();
+            }
+            else {
+              target = validator._nextTarget;
+              target = scorer.advance(target);
+            }
           }
         }
-      }
-      if (mapReduceWrapper != null) {
-        mapReduceWrapper.mapFullIndexReader(_subReaders[i], validator.getCountCollectors());
-      }
+        if (mapReduceWrapper != null) {
+          mapReduceWrapper.mapFullIndexReader(_subReaders[i], validator.getCountCollectors());
+        }  
       }
       return;
     }
 
-    for (int i = 0; i < _subReaders.length; i++) {
-      DocIdSet filterDocIdSet = filter.getDocIdSet(_subReaders[i]);
+    for (int i = 0; i < readerContexts.length; i++) {
+      AtomicReader reader = readerContexts[i].reader();
+      DocIdSet filterDocIdSet = filter.getDocIdSet(readerContexts[i],reader.getLiveDocs());
       if (filterDocIdSet == null) return;  //shall we use return or continue here ??
-      int docStart = start + _docStarts[i];
-      collector.setNextReader(_subReaders[i], docStart);
-      validator.setNextReader(_subReaders[i], docStart);
-      Scorer scorer = weight.scorer(_subReaders[i], true, false);
+      collector.setNextReader(readerContexts[i]);
+      validator.setNextReader(readerContexts[i]);
+      Scorer scorer = weight.scorer(readerContexts[i], true, false,reader.getLiveDocs());
       if (scorer!=null){
         collector.setScorer(scorer);
         DocIdSetIterator filterDocIdIterator = filterDocIdSet.iterator(); // CHECKME: use ConjunctionScorer here?

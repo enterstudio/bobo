@@ -48,6 +48,7 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
   private final HashMap<String, FacetHandler<?>> _runtimeFacetHandlerMap;
   private HashMap<String, FacetHandler<?>> _allFacetHandlerMap;
   private ArrayList<RuntimeFacetHandler<?>> _runtimeFacetHandlers = null;
+  
   public BoboIndexReader getIndexReader()
   {
     return _reader;
@@ -61,9 +62,10 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
    */
   public BoboSubBrowser(BoboIndexReader reader)
   {
-    super(reader);
+    super(new BoboCompositeReader(new BoboIndexReader[]{reader}));
     _reader = reader;
     _runtimeFacetHandlerMap = new HashMap<String, FacetHandler<?>>();
+    
     _runtimeFacetHandlerFactoryMap = reader.getRuntimeFacetHandlerFactoryMap();
     _allFacetHandlerMap = null;
   }
@@ -349,16 +351,11 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
 
       try
       {
-        if (weight == null)
-        {
-          Query q = req.getQuery();
-          if (q==null)
-          {
-            q = new MatchAllDocsQuery();
-          }
-          weight = q.createWeight(this);
+        Query q = req.getQuery();
+        if (q==null){
+          q = new MatchAllDocsQuery();
         }
-        search(weight, finalFilter, collector, start, req.getMapReduceWrapper());
+        search(q, finalFilter, collector, start, req.getMapReduceWrapper());
       }
       finally
       {

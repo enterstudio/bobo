@@ -38,7 +38,7 @@ public class MultiBoboBrowser extends MultiSearcher implements Closeable
    *          Browsers to search on
    * @throws IOException
    */
-  public MultiBoboBrowser(BoboBrowser[] browsers) throws IOException
+  public MultiBoboBrowser(BoboSubBrowser[] browsers) throws IOException
   {
     super(browsers);
     _subBrowsers = browsers;

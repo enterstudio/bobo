@@ -31,7 +31,7 @@ public final class FacetHitCollector{
 		}
 		else{
 		  if (_filter!=null){
-			_currentPointers.docidSet = _filter.getRandomAccessDocIdSet(reader);
+			_currentPointers.docidSet = _filter.getRandomAccessDocIdSet(reader,reader.getLiveDocs());
 			_currentPointers.postDocIDSetIterator = _currentPointers.docidSet.iterator();
 			_currentPointers.doc = _currentPointers.postDocIDSetIterator.nextDoc();
 		  }

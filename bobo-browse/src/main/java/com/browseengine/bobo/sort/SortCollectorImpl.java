@@ -26,7 +26,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 
 import com.browseengine.bobo.api.BoboIndexReader;
-import com.browseengine.bobo.api.Browsable;
+import com.browseengine.bobo.api.BoboSubBrowser;
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.BrowseHit;
 import com.browseengine.bobo.api.BrowseHit.TermFrequencyPair;
@@ -90,7 +90,7 @@ public class SortCollectorImpl extends SortCollector {
   private final int _offset;
   private final int _count;
 
-  private final Browsable _boboBrowser;
+  private final BoboSubBrowser _boboBrowser;
   private final boolean _collectDocIdCache;
   private CombinedFacetAccessible[] _groupAccessibles;
   private final List<FacetAccessible>[] _facetAccessibleLists;
@@ -130,7 +130,7 @@ public class SortCollectorImpl extends SortCollector {
 
   public SortCollectorImpl(DocComparatorSource compSource,
                            SortField[] sortFields,
-                           Browsable boboBrowser,
+                           BoboSubBrowser boboBrowser,
                            int offset,
                            int count,
                            boolean doScoring,

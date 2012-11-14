@@ -18,7 +18,7 @@ import org.apache.lucene.search.SortField.Type;
 
 import com.browseengine.bobo.api.BoboCustomSortField;
 import com.browseengine.bobo.api.BoboIndexReader;
-import com.browseengine.bobo.api.Browsable;
+import com.browseengine.bobo.api.BoboSubBrowser;
 import com.browseengine.bobo.api.BrowseHit;
 import com.browseengine.bobo.api.FacetAccessible;
 import com.browseengine.bobo.facets.FacetHandler;
@@ -164,7 +164,7 @@ public abstract class SortCollector extends Collector {
 	    }
 	}
 	
-	private static DocComparatorSource getComparatorSource(Browsable browser,SortField sf){
+	private static DocComparatorSource getComparatorSource(BoboSubBrowser browser,SortField sf){
 		DocComparatorSource compSource = null;
 		if (SortField.FIELD_DOC.equals(sf)){
 			compSource = new DocIdDocComparatorSource();
@@ -200,7 +200,7 @@ public abstract class SortCollector extends Collector {
 		return compSource;
 	}
 	
-	private static SortField convert(Browsable browser,SortField sort){
+	private static SortField convert(BoboSubBrowser browser,SortField sort){
 		String field =sort.getField();
 		FacetHandler<?> facetHandler = browser.getFacetHandler(field);
 		if (facetHandler!=null){
@@ -212,7 +212,7 @@ public abstract class SortCollector extends Collector {
 			return sort;
 		}
 	}
-	public static SortCollector buildSortCollector(Browsable browser,Query q,SortField[] sort,int offset,int count,boolean forceScoring,boolean fetchStoredFields, Set<String> termVectorsToFetch,String[] groupBy, int maxPerGroup, boolean collectDocIdCache){
+	public static SortCollector buildSortCollector(BoboSubBrowser browser,Query q,SortField[] sort,int offset,int count,boolean forceScoring,boolean fetchStoredFields, Set<String> termVectorsToFetch,String[] groupBy, int maxPerGroup, boolean collectDocIdCache){
 		boolean doScoring=forceScoring;
 		if (sort == null || sort.length==0){	
 			if (q!=null && !(q instanceof MatchAllDocsQuery)){

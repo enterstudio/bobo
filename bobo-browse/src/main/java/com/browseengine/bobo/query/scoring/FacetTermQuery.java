@@ -11,6 +11,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -21,6 +22,7 @@ import com.browseengine.bobo.api.BrowseSelection;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.facets.filter.RandomAccessFilter;
+import com.browseengine.bobo.query.MatchAllDocIdSetIterator;
 
 public class FacetTermQuery extends Query {
 	/**
@@ -60,7 +62,7 @@ public class FacetTermQuery extends Query {
 	}
 	
 	@Override
-	public Weight createWeight(Searcher searcher) throws IOException {
+	public Weight createWeight(IndexSearcher searcher) throws IOException {
 		return new FacetTermWeight(searcher.getSimilarity());
 	}
 	
