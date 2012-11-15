@@ -30,7 +30,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import com.browseengine.bobo.api.BoboBrowser;
-import com.browseengine.bobo.api.BoboIndexReader;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
@@ -38,10 +38,10 @@ import com.browseengine.bobo.service.BrowseService;
 
 public class DefaultBrowseServiceImpl implements BrowseService {
 	private static Logger logger=Logger.getLogger(DefaultBrowseServiceImpl.class);
-	private BoboIndexReader _reader;
+	private BoboCompositeReader _reader;
 	private boolean _closeReader;
 	
-	public DefaultBrowseServiceImpl(BoboIndexReader reader) {
+	public DefaultBrowseServiceImpl(BoboCompositeReader reader) {
 		super();
 		_reader=reader;
 		_closeReader=false;

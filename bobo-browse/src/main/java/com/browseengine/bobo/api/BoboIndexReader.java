@@ -499,6 +499,7 @@ public class BoboIndexReader extends FilterAtomicReader
     }
     _facetHandlers = facetHandlers;
     _workArea = workArea;
+    facetInit();
   }
 
   protected void facetInit() throws IOException

@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
-import com.browseengine.bobo.api.BoboIndexReader;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
@@ -44,7 +44,7 @@ import com.browseengine.bobo.service.BrowseServiceFactory;
 public class BrowseServiceImpl implements BrowseService {
 	private static final Logger logger = Logger.getLogger(BrowseServiceImpl.class);
 	private final File _idxDir;
-	private BoboIndexReader _reader;
+	private BoboCompositeReader _reader;
 		
 	
 	public BrowseServiceImpl(File idxDir) {
@@ -64,12 +64,12 @@ public class BrowseServiceImpl implements BrowseService {
 		this(new File(System.getProperty("index.directory")));
 	}
 	
-	private  BoboIndexReader newIndexReader() throws IOException {
+	private  BoboCompositeReader newIndexReader() throws IOException {
         Directory idxDir=FSDirectory.open(_idxDir);
         return newIndexReader(idxDir);
 	}
 	
-	public static BoboIndexReader newIndexReader(Directory idxDir) throws IOException{
+	public static BoboCompositeReader newIndexReader(Directory idxDir) throws IOException{
         if (!DirectoryReader.indexExists(idxDir)) {
                 return null;
         }
@@ -77,10 +77,10 @@ public class BrowseServiceImpl implements BrowseService {
         long start=System.currentTimeMillis();
         
         IndexReader ir = DirectoryReader.open(idxDir);
-        BoboIndexReader reader;
+        BoboCompositeReader reader;
         
         try {
-                reader = BoboIndexReader.getInstance(ir);
+                reader = new BoboCompositeReader(ir,null,null);
         } catch (IOException ioe) {
                 try { ir.close(); } catch (IOException ioe2) {}
                 throw ioe;

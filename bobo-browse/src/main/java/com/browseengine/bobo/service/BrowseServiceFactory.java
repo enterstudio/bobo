@@ -33,6 +33,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.impl.BrowseServiceImpl;
@@ -48,18 +49,14 @@ public class BrowseServiceFactory {
 			return new BrowseServiceImpl(idxDir);
 	}
 	
-	public static BrowseService createBrowseService(BoboIndexReader bReader){
+	public static BrowseService createBrowseService(BoboCompositeReader bReader){
 		return new DefaultBrowseServiceImpl(bReader);
 	}
 	
-	public static BoboIndexReader getBoboIndexReader(Directory idxDir) throws BrowseException{
-	  try{
+	public static BoboCompositeReader getBoboIndexReader(Directory idxDir) throws BrowseException{
+	  
         if (!DirectoryReader.indexExists(idxDir)){
             throw new BrowseException("Index does not exist at: "+idxDir);
-        }
-        }
-        catch(IOException ioe){
-            throw new BrowseException(ioe.getMessage(),ioe);
         }
             
         IndexReader reader=null;
@@ -70,9 +67,9 @@ public class BrowseServiceFactory {
             throw new BrowseException(ioe.getMessage(),ioe);
         }
         
-        BoboIndexReader bReader=null;
+        BoboCompositeReader bReader=null;
         try{
-            bReader=BoboIndexReader.getInstance(reader);
+            bReader = new BoboCompositeReader(reader, null, null);
         }
         catch(IOException ioe){
             if (reader!=null){
@@ -88,7 +85,7 @@ public class BrowseServiceFactory {
 	}
 	
 	public static BrowseService createBrowseService(Directory idxDir) throws BrowseException{
-	    BoboIndexReader bReader=getBoboIndexReader(idxDir);
+	  BoboCompositeReader bReader=getBoboIndexReader(idxDir);
 		
 		DefaultBrowseServiceImpl bs=(DefaultBrowseServiceImpl)createBrowseService(bReader);
 		bs.setCloseReaderOnCleanup(true);

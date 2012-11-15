@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
@@ -58,7 +58,7 @@ public class BoboIndexer {
 	}
 	
 	private Analyzer getAnalyzer(){
-		return _analyzer == null ? new StandardAnalyzer(Version.LUCENE_CURRENT) : _analyzer;
+		return _analyzer == null ? new StandardAnalyzer(Version.LUCENE_40) : _analyzer;
 	}
 		
 	public BoboIndexer(DataDigester digester,Directory index){
@@ -70,10 +70,11 @@ public class BoboIndexer {
 	public void index() throws IOException{
 		_writer=null;
 		try{
-			_writer=new IndexWriter(_index,getAnalyzer(),MaxFieldLength.UNLIMITED);
+		  IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_40,getAnalyzer());
+			_writer=new IndexWriter(_index, conf);
 			MyDataHandler handler=new MyDataHandler(_writer);
 			_digester.digest(handler);
-			_writer.optimize();
+			_writer.forceMerge(1);
 		}
 		finally{
 			if (_writer!=null){

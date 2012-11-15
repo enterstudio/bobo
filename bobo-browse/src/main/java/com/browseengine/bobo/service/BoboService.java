@@ -9,7 +9,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.FSDirectory;
 
 import com.browseengine.bobo.api.BoboBrowser;
-import com.browseengine.bobo.api.BoboIndexReader;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
 
@@ -17,7 +17,7 @@ public class BoboService{
 	private static Logger logger = Logger.getLogger(BoboService.class);
 	
 	private final File _idxDir;
-	private BoboIndexReader _boboReader;
+	private BoboCompositeReader _boboReader;
 	
 	public BoboService(String path)
 	{
@@ -61,7 +61,7 @@ public class BoboService{
 		IndexReader reader=DirectoryReader.open(FSDirectory.open(_idxDir));
 		try
 		{
-			_boboReader=BoboIndexReader.getInstance(reader);
+			_boboReader = new BoboCompositeReader(reader, null, null);
 		}
 		catch(IOException ioe)
 		{
