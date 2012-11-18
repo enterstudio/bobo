@@ -14,6 +14,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -27,11 +28,11 @@ import com.browseengine.bobo.sort.SortCollector;
 /**
  * Provides implementation of Browser for multiple Browser instances
  */
-public class MultiBoboBrowser extends MultiSearcher implements Closeable
+public class MultiBoboBrowser implements Closeable
 {
   private static Logger logger = Logger.getLogger(MultiBoboBrowser.class);
   
-  protected final BoboBrowser[] _subBrowsers;
+  protected final BoboSubBrowser[] _subBrowsers;
   /**
    * 
    * @param browsers
@@ -40,7 +41,6 @@ public class MultiBoboBrowser extends MultiSearcher implements Closeable
    */
   public MultiBoboBrowser(BoboSubBrowser[] browsers) throws IOException
   {
-    super(browsers);
     _subBrowsers = browsers;
   }
 

@@ -3,6 +3,7 @@
  */
 package com.browseengine.bobo.facets;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Set;
 
@@ -15,7 +16,7 @@ import com.browseengine.bobo.api.BoboIndexReader;
  * @author ymatsuda
  * @param <D> type parameter for FacetData
  */
-public abstract class RuntimeFacetHandler<D> extends FacetHandler<D>
+public abstract class RuntimeFacetHandler<D> extends FacetHandler<D> implements Closeable
 {
   /**
    * Constructor that specifying the dependent facet handlers using names.
@@ -59,6 +60,7 @@ public abstract class RuntimeFacetHandler<D> extends FacetHandler<D>
     reader.putRuntimeFacetHandler(_name, this);
   }
 
+  @Override
   public void close()
   {
   }

@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -43,13 +42,15 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
 {
   private static Logger                   logger = Logger.getLogger(BoboSubBrowser.class);
   
-  private final BoboIndexReader           _reader;
-  private final Map<String, RuntimeFacetHandlerFactory<?,?>> _runtimeFacetHandlerFactoryMap;
-  private final HashMap<String, FacetHandler<?>> _runtimeFacetHandlerMap;
+  private final BoboCompositeReader           _reader;
+  private final Map<String, RuntimeFacetHandlerFactory<FacetHandlerInitializerParam,?>> _runtimeFacetHandlerFactoryMap;
   private HashMap<String, FacetHandler<?>> _allFacetHandlerMap;
   private ArrayList<RuntimeFacetHandler<?>> _runtimeFacetHandlers = null;
   
-  public BoboIndexReader getIndexReader()
+  private final RuntimeFacetContext rtFacetCtx;
+
+  
+  public BoboCompositeReader getIndexReader()
   {
     return _reader;
   }
@@ -60,13 +61,12 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
    * @param reader
    *          A bobo reader instance
    */
-  public BoboSubBrowser(BoboIndexReader reader)
+  public BoboSubBrowser(BoboCompositeReader reader)
   {
-    super(new BoboCompositeReader(new BoboIndexReader[]{reader}));
+    super(reader);
     _reader = reader;
-    _runtimeFacetHandlerMap = new HashMap<String, FacetHandler<?>>();
-    
-    _runtimeFacetHandlerFactoryMap = reader.getRuntimeFacetHandlerFactoryMap();
+    _runtimeFacetHandlerFactoryMap = reader.runtimeFacetHandlerFactoryMap;
+    rtFacetCtx = new RuntimeFacetContext(_runtimeFacetHandlerFactoryMap);
     _allFacetHandlerMap = null;
   }
   
@@ -83,43 +83,12 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
 		  return getFieldVal(docid,fieldname);
 	  }
 	  else{
-		  return facetHandler.getRawFieldValues(_reader,docid);
+	    BoboIndexReader segmentReader = _reader.getSubreader(docid);
+	    int docbase = _reader.getBaseDocId(docid);
+		  return facetHandler.getRawFieldValues(segmentReader,docid-docbase);
 	  }
   }
   
-  /**
-   * Sets runtime facet handler. If has the same name as a preload handler, for the
-   * duration of this browser, this one will be used.
-   * 
-   * @param facetHandler
-   *          Runtime facet handler
-   */
-  public void setFacetHandler(FacetHandler<?> facetHandler) throws IOException
-  {
-	Set<String> dependsOn = facetHandler.getDependsOn();
-	BoboIndexReader reader = (BoboIndexReader) getIndexReader();
-	if (dependsOn.size() > 0)
-	{
-		Iterator<String> iter = dependsOn.iterator();
-		while(iter.hasNext())
-		{
-			String fn = iter.next();
-			FacetHandler<?> f = _runtimeFacetHandlerMap.get(fn);
-			if (f == null)
-			{
-				f = reader.getFacetHandler(fn);
-			}
-			if (f==null)
-			{
-				throw new IOException("depended on facet handler: "+fn+", but is not found");
-			}
-			facetHandler.putDependedFacetHandler(f);
-		}
-	}
-    facetHandler.loadFacetData(reader);
-    _runtimeFacetHandlerMap.put(facetHandler.getName(), facetHandler);
-  }
-
   /**
    * Gets a defined facet handler
    * 
@@ -134,9 +103,10 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
   
   public Map<String,FacetHandler<?>> getFacetHandlerMap(){
 	  if (_allFacetHandlerMap == null){
-		_allFacetHandlerMap = new HashMap<String,FacetHandler<?>>(_reader.getFacetHandlerMap());
+		  _allFacetHandlerMap = new HashMap<String,FacetHandler<?>>(_reader.facetHandlerMap);
+		  _allFacetHandlerMap.putAll(this.rtFacetCtx.runtimeFacetHandlerMap);
     }
-		_allFacetHandlerMap.putAll(_runtimeFacetHandlerMap);
+		
 	  return _allFacetHandlerMap;
   }
 
@@ -198,37 +168,17 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
 
     if (_reader == null)
       return;
-
     
     //      initialize all RuntimeFacetHandlers with data supplied by user at run-time.
     _runtimeFacetHandlers = new ArrayList<RuntimeFacetHandler<?>>(_runtimeFacetHandlerFactoryMap.size());
 
     Set<String> runtimeFacetNames = _runtimeFacetHandlerFactoryMap.keySet();
     for(String facetName : runtimeFacetNames)
-    {
-      FacetHandler<?> sfacetHandler = this.getFacetHandler(facetName);
-      if (sfacetHandler!=null)
-      {
-        logger.warn("attempting to reset facetHandler: " + sfacetHandler);
-        continue;
-      }
-      RuntimeFacetHandlerFactory<FacetHandlerInitializerParam,?> factory = (RuntimeFacetHandlerFactory<FacetHandlerInitializerParam, ?>) _runtimeFacetHandlerFactoryMap.get(facetName);
-      
-        try
+    {        
+      try
         {
-
           FacetHandlerInitializerParam data = req.getFacethandlerData(facetName);
-          if (data == null)
-            data = FacetHandlerInitializerParam.EMPTY_PARAM;
-          if (data != FacetHandlerInitializerParam.EMPTY_PARAM || !factory.isLoadLazily())
-          {
-            RuntimeFacetHandler<?> facetHandler =  factory.get(data);
-            if (facetHandler != null)
-            {
-              _runtimeFacetHandlers.add(facetHandler); // add to a list so we close them after search
-              this.setFacetHandler(facetHandler);
-            }
-          }
+          rtFacetCtx.loadFacetHandler(facetName, data, _reader);
         }
         catch (IOException e)
         {
@@ -454,11 +404,6 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
     result.setTime(end - start);
     return result;
   }
-  
-  public Map<String, FacetHandler<?>> getRuntimeFacetHandlerMap()
-  {
-    return _runtimeFacetHandlerMap;
-  }
 
   public int numDocs()
   {
@@ -470,9 +415,11 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
       IOException
   {
     Document doc = super.doc(docid);
-    for (FacetHandler<?> handler : _runtimeFacetHandlerMap.values())
+    for (FacetHandler<?> handler : _allFacetHandlerMap.values())
     {
-      String[] vals = handler.getFieldValues(_reader,docid);
+      int docbase = _reader.getBaseDocId(docid);
+      BoboIndexReader subreader = _reader.getSubreader(docid);
+      String[] vals = handler.getFieldValues(subreader,docid-docbase);
       for (String val : vals)
       {
         doc.add(new Field(handler.getName(),
@@ -498,7 +445,9 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
     FacetHandler<?> facetHandler = getFacetHandler(fieldname);
     if (facetHandler != null)
     {
-      return facetHandler.getFieldValues(_reader,docid);
+      int docbase = _reader.getBaseDocId(docid);
+      BoboIndexReader subreader = _reader.getSubreader(docid);
+      return facetHandler.getFieldValues(subreader,docid-docbase);
     }
     else
     {
@@ -512,17 +461,6 @@ public class BoboSubBrowser extends BoboSearcher2 implements Closeable
   
   public void close() throws IOException
   {
-    if (_runtimeFacetHandlers!=null)
-    {
-      for(RuntimeFacetHandler<?> handler : _runtimeFacetHandlers)
-      {
-        handler.close();
-      }
-    }
-    if(_reader != null)
-    {
-      _reader.clearRuntimeFacetData();
-      _reader.clearRuntimeFacetHandler();
-    }
+    rtFacetCtx.close();
   }
 }
