@@ -1,7 +1,5 @@
 package com.browseengine.bobo.facets.impl;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -10,15 +8,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.search.DocIdSetIterator;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.facets.data.FacetDataCache;
-import com.browseengine.bobo.facets.data.TermListFactory;
+import com.browseengine.bobo.facets.data.FacetDataFetcher;
 import com.browseengine.bobo.facets.data.TermFixedLengthLongArrayListFactory;
+import com.browseengine.bobo.facets.data.TermListFactory;
 import com.browseengine.bobo.facets.data.TermStringList;
 import com.browseengine.bobo.facets.data.TermValueList;
-import com.browseengine.bobo.facets.data.FacetDataFetcher;
+import com.browseengine.bobo.query.MatchAllDocIdSetIterator;
 import com.browseengine.bobo.util.BigIntArray;
 import com.browseengine.bobo.util.BigSegmentedArray;
 
@@ -55,12 +54,10 @@ public class VirtualSimpleFacetHandler extends SimpleFacetHandler
     int nullMaxId = -1;
     int nullFreq = 0;
 
-    TermDocs termDocs = reader.termDocs(null);
-    try
-    {
-      while(termDocs.next())
+    MatchAllDocIdSetIterator allIter = new MatchAllDocIdSetIterator(reader);
+    
+      while((doc = allIter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS)
       {
-        doc = termDocs.doc();
         Object val = _facetDataFetcher.fetch(reader, doc);
         if (val == null)
         {
@@ -130,11 +127,6 @@ public class VirtualSimpleFacetHandler extends SimpleFacetHandler
         }
         docList.add(doc);
       }
-    }
-    finally
-    {
-      termDocs.close();
-    }
     _facetDataFetcher.cleanup(reader);
 
     int maxDoc = reader.maxDoc();

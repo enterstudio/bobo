@@ -5,8 +5,9 @@ package com.browseengine.bobo.search.section;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * TermNode for SectionSearchQueryPlan
@@ -17,12 +18,12 @@ public class TermNode extends AbstractTerminalNode
   private byte[] _payloadBuf;
   protected int _positionInPhrase;
   
-  public TermNode(Term term, IndexReader reader) throws IOException
+  public TermNode(Term term, AtomicReader reader) throws IOException
   {
     this(term, 0, reader);
   }
 
-  public TermNode(Term term, int positionInPhrase, IndexReader reader) throws IOException
+  public TermNode(Term term, int positionInPhrase, AtomicReader reader) throws IOException
   {
     super(term, reader);
     _payloadBuf = new byte[4];
@@ -62,9 +63,10 @@ public class TermNode extends AbstractTerminalNode
   
   public int readSecId() throws IOException
   {
-    if(_tp.isPayloadAvailable())
+    BytesRef payload = _tp.getPayload();
+    if(payload != null)
     {
-      _curSec = intDecoders[_tp.getPayloadLength()].decode(_tp.getPayload(_payloadBuf, 0));
+      _curSec = intDecoders[payload.length].decode(payload);
     }
     else
     {
@@ -75,30 +77,30 @@ public class TermNode extends AbstractTerminalNode
   
   private abstract static class IntDecoder
   {
-    abstract int decode(byte[] d);
+    abstract int decode(BytesRef data);
   }
   
   private static final IntDecoder[] intDecoders = 
   {
     new IntDecoder()
     {
-      int decode(byte[] d) { return 0; }
+      int decode(BytesRef d) { return 0; }
     },
     new IntDecoder()
     {
-      int decode(byte[] d) { return (d[0]&0xff); } 
+      int decode(BytesRef d) { return (d.bytes[d.offset]&0xff); } 
     },
     new IntDecoder()
     {
-      int decode(byte[] d) { return (d[0]&0xff)|((d[1]&0xff)<<8); } 
+      int decode(BytesRef d) { return (d.bytes[d.offset]&0xff)|((d.bytes[d.offset+1]&0xff)<<8); } 
     },
     new IntDecoder()
     {
-      int decode(byte[] d) { return (d[0]&0xff)|((d[1]&0xff)<<8)|((d[2]&0xff)<<16); } 
+      int decode(BytesRef d) { return (d.bytes[d.offset]&0xff)|((d.bytes[d.offset+1]&0xff)<<8)|((d.bytes[d.offset+2]&0xff)<<16); } 
     },
     new IntDecoder()
     {
-      int decode(byte[] d) { return (d[0]&0xff)|((d[1]&0xff)<<8)|((d[2]&0xff)<<16)|((d[3]&0xff)<<24); } 
+      int decode(BytesRef d) { return (d.bytes[d.offset]&0xff)|((d.bytes[d.offset+1]&0xff)<<8)|((d.bytes[d.offset+2]&0xff)<<16)|((d.bytes[d.offset+3]&0xff)<<24); } 
     }
   };
 }

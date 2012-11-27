@@ -31,7 +31,7 @@ import com.browseengine.bobo.query.scoring.FacetScoreable;
 import com.browseengine.bobo.query.scoring.FacetTermScoringFunctionFactory;
 import com.browseengine.bobo.sort.DocComparatorSource;
 
-public class SimpleFacetHandler extends FacetHandler<FacetDataCache> implements FacetScoreable
+public class SimpleFacetHandler extends FacetHandler<FacetDataCache<?>> implements FacetScoreable
 {
 	private static Logger logger = Logger.getLogger(SimpleFacetHandler.class);
 	

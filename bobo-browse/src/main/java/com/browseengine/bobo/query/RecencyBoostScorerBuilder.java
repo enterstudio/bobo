@@ -3,7 +3,7 @@ package com.browseengine.bobo.query;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 
@@ -38,7 +38,8 @@ public class RecencyBoostScorerBuilder implements ScorerBuilder {
 		_now =timeunit.toMillis(from);
 	}
 	
-	public Explanation explain(IndexReader reader, int doc,
+	@Override
+	public Explanation explain(AtomicReader reader, int doc,
 			Explanation innerExplaination) throws IOException {
 		if (reader instanceof BoboIndexReader){
 			  BoboIndexReader boboReader = (BoboIndexReader)reader;
@@ -67,7 +68,7 @@ public class RecencyBoostScorerBuilder implements ScorerBuilder {
 			}
 	}
 
-	public Scorer createScorer(final Scorer innerScorer, IndexReader reader,
+	public Scorer createScorer(final Scorer innerScorer, AtomicReader reader,
 			boolean scoreDocsInOrder, boolean topScorer) throws IOException {
 		if (reader instanceof BoboIndexReader){
 		  BoboIndexReader boboReader = (BoboIndexReader)reader;

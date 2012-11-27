@@ -6,15 +6,14 @@ import java.util.List;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
-import com.browseengine.bobo.facets.data.FacetDataCache;
 import com.kamikaze.docidset.impl.OrDocIdSet;
 
 public class RandomAccessOrFilter extends RandomAccessFilter
 {
-  private static final long serialVersionUID = 1L;
  
   protected final List<RandomAccessFilter> _filters;
   
@@ -45,11 +44,11 @@ public class RandomAccessOrFilter extends RandomAccessFilter
   }
   
   @Override
-  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException
+  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException
   {
     if(_filters.size() == 1)
     {
-      return _filters.get(0).getRandomAccessDocIdSet(reader);
+      return _filters.get(0).getRandomAccessDocIdSet(reader, liveDocs);
     }
     else
     {
@@ -57,7 +56,7 @@ public class RandomAccessOrFilter extends RandomAccessFilter
       List<RandomAccessDocIdSet> randomAccessList = new ArrayList<RandomAccessDocIdSet>(_filters.size());
       for (RandomAccessFilter f : _filters)
       {
-        RandomAccessDocIdSet s = f.getRandomAccessDocIdSet(reader);
+        RandomAccessDocIdSet s = f.getRandomAccessDocIdSet(reader, liveDocs);
         list.add(s);
         randomAccessList.add(s);
       }

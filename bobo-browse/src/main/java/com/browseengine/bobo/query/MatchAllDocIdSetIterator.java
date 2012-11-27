@@ -2,20 +2,24 @@ package com.browseengine.bobo.query;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 public class MatchAllDocIdSetIterator extends DocIdSetIterator {
-    private final TermDocs _termDocs;
-    private int _docid;
-	public MatchAllDocIdSetIterator(IndexReader reader) throws IOException {
-		_termDocs = reader.termDocs(null);
+  private int _docid;
+  private final int maxDoc;
+  private final Bits liveDocs;
+	
+  public MatchAllDocIdSetIterator(AtomicReader reader) throws IOException {
+    maxDoc = reader.maxDoc();
+    liveDocs = reader.getLiveDocs();
 		_docid = -1;
 	}
 	@Override
 	public int advance(int target) throws IOException {
-	    return _docid = _termDocs.skipTo(target) ? _termDocs.doc() : NO_MORE_DOCS;
+	  _docid = target-1;
+    return nextDoc();
 	}
 	
 	@Override
@@ -25,6 +29,13 @@ public class MatchAllDocIdSetIterator extends DocIdSetIterator {
 	
 	@Override
 	public int nextDoc() throws IOException {
-		return _docid = _termDocs.next() ? _termDocs.doc() : NO_MORE_DOCS;
+	  _docid++;
+    while(liveDocs != null && _docid < maxDoc && !liveDocs.get(_docid)) {
+      _docid++;
+    }
+    if (_docid == maxDoc) {
+      _docid = NO_MORE_DOCS;
+    }
+    return _docid;
 	}
 }

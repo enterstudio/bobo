@@ -10,18 +10,20 @@ import java.util.Map;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.BoboDirectoryReader;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import com.browseengine.bobo.api.BoboBrowser;
 import com.browseengine.bobo.api.BoboIndexReader;
@@ -54,9 +56,13 @@ public class AttributesFacetHandlerTest extends TestCase {
   }
 
   private void addMetaDataField(Document doc, String name, String[] vals) {
+    FieldType ft = new FieldType();
+    ft.setStored(false);
+    ft.setIndexed(true);
+    ft.setTokenized(false);
+    ft.setOmitNorms(true);
     for (String val : vals) {
-      Field field = new Field(name, val, Store.NO, Index.NOT_ANALYZED_NO_NORMS);
-      field.setOmitTermFreqAndPositions(true);
+      Field field = new Field(name, val, ft);
       doc.add(field);
     }
   }
@@ -64,9 +70,11 @@ public class AttributesFacetHandlerTest extends TestCase {
   @Override
   protected void setUp() throws Exception {
     directory = new RAMDirectory();
-    analyzer = new WhitespaceAnalyzer();
+    analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
     selectionProperties = new HashMap<String, String>();
-    IndexWriter writer = new IndexWriter(directory, analyzer, true, MaxFieldLength.UNLIMITED);
+    IndexWriterConfig writerConfig = new IndexWriterConfig(Version.LUCENE_40,analyzer);
+    
+    IndexWriter writer = new IndexWriter(directory,writerConfig);
 
     writer.addDocument(doc("prop1=val1", "prop2=val1", "prop5=val1"));
     writer.addDocument(doc("prop1=val2", "prop3=val1", "prop7=val7"));
@@ -79,7 +87,7 @@ public class AttributesFacetHandlerTest extends TestCase {
     attributesFacetHandler = new AttributesFacetHandler(AttributeHandlerName, AttributeHandlerName, null, null,
         new HashMap<String, String>());
     facetHandlers.add(attributesFacetHandler);
-    IndexReader reader = IndexReader.open(directory, true);
+    IndexReader reader = DirectoryReader.open(directory);
      boboReader = BoboIndexReader.getInstance(reader, facetHandlers);
     attributesFacetHandler.loadFacetData(boboReader);
     browser = new BoboBrowser(boboReader);
@@ -117,7 +125,7 @@ public class AttributesFacetHandlerTest extends TestCase {
     BrowseRequest request = createRequest(1, "prop3");
     FacetCountCollectorSource facetCountCollectorSource = attributesFacetHandler.getFacetCountCollectorSource(request.getSelection(AttributeHandlerName), request.getFacetSpec(AttributeHandlerName));
     RandomAccessFilter randomAccessFilter = attributesFacetHandler.buildFilter(request.getSelection(AttributeHandlerName));
-    DocIdSetIterator iterator = randomAccessFilter.getDocIdSet(boboReader).iterator();
+    DocIdSetIterator iterator = randomAccessFilter.getDocIdSet(boboReader.getContext(), boboReader.getLiveDocs()).iterator();
     int docId = iterator.nextDoc();
     int[] docIds = new int[2];
     int i = 0;
@@ -261,8 +269,10 @@ public class AttributesFacetHandlerTest extends TestCase {
   
   private void modifiedSetup() throws CorruptIndexException, LockObtainFailedException, IOException {
     directory = new RAMDirectory();
-    analyzer = new WhitespaceAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, analyzer, true, MaxFieldLength.UNLIMITED);
+    analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
+
+    IndexWriterConfig writerConfig = new IndexWriterConfig(Version.LUCENE_40,analyzer);
+    IndexWriter writer = new IndexWriter(directory, writerConfig);
 
     writer.addDocument(doc("prop1=val1", "prop2=val1", "prop5=val1"));
     writer.addDocument(doc("prop1=val2", "prop3=val1", "prop7=val7"));
@@ -277,8 +287,8 @@ public class AttributesFacetHandlerTest extends TestCase {
     attributesFacetHandler = new AttributesFacetHandler(AttributeHandlerName, AttributeHandlerName, null, null,
         facetProps);
     facetHandlers.add(attributesFacetHandler);
-    IndexReader reader = IndexReader.open(directory, true);
-     boboReader = BoboIndexReader.getInstance(reader, facetHandlers);
+    IndexReader reader = DirectoryReader.open(directory);
+     boboReader = new BoboDirectoryReader(reader, facetHandlers);
     attributesFacetHandler.loadFacetData(boboReader);
     browser = new BoboBrowser(boboReader);
   }

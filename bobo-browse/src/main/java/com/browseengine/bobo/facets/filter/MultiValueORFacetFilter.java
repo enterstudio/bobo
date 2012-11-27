@@ -4,21 +4,19 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 import com.browseengine.bobo.facets.FacetHandler;
-import com.browseengine.bobo.facets.data.FacetDataCache;
 import com.browseengine.bobo.facets.data.MultiValueFacetDataCache;
 import com.browseengine.bobo.facets.filter.FacetOrFilter.FacetOrDocIdSetIterator;
 import com.browseengine.bobo.util.BigNestedIntArray;
 
 public class MultiValueORFacetFilter extends RandomAccessFilter
 {
-
-  private static final long serialVersionUID = 1L;
   private final FacetHandler<?> _facetHandler;
   private final String[] _vals;
   private final boolean _takeCompliment;
@@ -86,7 +84,7 @@ public class MultiValueORFacetFilter extends RandomAccessFilter
   }
   
   @Override
-  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException
+  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException
   {
     final MultiValueFacetDataCache dataCache = (MultiValueFacetDataCache)_facetHandler.getFacetData(reader);
     final int[] index = _valueConverter.convert(dataCache, _vals);
@@ -111,21 +109,7 @@ public class MultiValueORFacetFilter extends RandomAccessFilter
   
     if (count == 0)
     {
-      final DocIdSet empty = EmptyDocIdSet.getInstance();
-      return new RandomAccessDocIdSet()
-      {
-        @Override
-        public boolean get(int docId)
-        {
-          return false;
-        }
-    
-        @Override
-        public DocIdSetIterator iterator() throws IOException
-        {
-          return empty.iterator();
-        }         
-      };
+      return EmptyDocIdSet.getInstance();
     }
     else
     {

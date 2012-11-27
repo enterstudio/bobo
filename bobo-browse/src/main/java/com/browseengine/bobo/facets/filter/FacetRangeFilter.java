@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
@@ -18,12 +19,10 @@ import com.browseengine.bobo.util.BigSegmentedArray;
 
 public final class FacetRangeFilter extends RandomAccessFilter 
 {
-
-	private static final long serialVersionUID = 1L;
-	private final FacetHandler<FacetDataCache> _facetHandler;
+	private final FacetHandler<FacetDataCache<?>> _facetHandler;
 	private final String _rangeString;
 	
-	public FacetRangeFilter(FacetHandler<FacetDataCache> facetHandler, String rangeString)
+	public FacetRangeFilter(FacetHandler<FacetDataCache<?>> facetHandler, String rangeString)
 	{
 		_facetHandler = facetHandler;
 		_rangeString = rangeString;
@@ -32,7 +31,7 @@ public final class FacetRangeFilter extends RandomAccessFilter
   public double getFacetSelectivity(BoboIndexReader reader)
   {
     double selectivity = 0;
-    FacetDataCache dataCache = _facetHandler.getFacetData(reader);
+    FacetDataCache<?> dataCache = _facetHandler.getFacetData(reader);
     int[] range = parse(dataCache,_rangeString);
     if (range != null) 
     {
@@ -62,7 +61,7 @@ public final class FacetRangeFilter extends RandomAccessFilter
 		private final BigSegmentedArray _orderArray;
 		
 		
-		FacetRangeDocIdSetIterator(int start,int end,FacetDataCache dataCache)
+		FacetRangeDocIdSetIterator(int start,int end,FacetDataCache<?> dataCache)
 		{			
 			_start=start;
 			_end=end;
@@ -146,13 +145,13 @@ public final class FacetRangeFilter extends RandomAccessFilter
 		private FacetRangeValueConverter(){
 			
 		}
-		public int[] convert(FacetDataCache dataCache, String[] vals) {
+		public int[] convert(FacetDataCache<?> dataCache, String[] vals) {
 			return convertIndexes(dataCache,vals);
 		}
 		
 	}
 
-	public static int[] convertIndexes(FacetDataCache dataCache,String[] vals)
+	public static int[] convertIndexes(FacetDataCache<?> dataCache,String[] vals)
 	  {
 	    IntList list = new IntArrayList();
 	    for (String val : vals)
@@ -279,7 +278,7 @@ public final class FacetRangeFilter extends RandomAccessFilter
   }
 	
   @Override
-  public RandomAccessDocIdSet getRandomAccessDocIdSet(final BoboIndexReader reader) throws IOException
+  public RandomAccessDocIdSet getRandomAccessDocIdSet(final BoboIndexReader reader, Bits liveDocs) throws IOException
   {      
     final FacetDataCache dataCache = _facetHandler.getFacetData(reader);
 

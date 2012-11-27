@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -32,14 +32,15 @@ public class FacetBasedBoostScorerBuilder implements ScorerBuilder
     _scoringFunctionFactory = scoringFunctionFactory;
   }
   
-  public Scorer createScorer(Scorer innerScorer, IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException
+  public Scorer createScorer(Scorer innerScorer, AtomicReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException
   {
     if(!(reader instanceof BoboIndexReader)) throw new IllegalArgumentException("IndexReader is not BoboIndexReader");
     
     return new FacetBasedBoostingScorer((BoboIndexReader)reader, innerScorer.getWeight(), innerScorer);
   }
   
-  public Explanation explain(IndexReader indexReader, int docid, Explanation innerExplaination) throws IOException
+  @Override
+  public Explanation explain(AtomicReader indexReader, int docid, Explanation innerExplaination) throws IOException
   {
     if(!(indexReader instanceof BoboIndexReader)) throw new IllegalArgumentException("IndexReader is not BoboIndexReader");
     BoboIndexReader reader = (BoboIndexReader)indexReader;

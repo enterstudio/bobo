@@ -6,7 +6,7 @@ package com.browseengine.bobo.search.section;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -29,10 +29,10 @@ public class SectionSearchQueryPlanBuilder
     }
   }
   
-  protected final IndexReader _reader;
+  protected final AtomicReader _reader;
   protected final MetaDataCacheProvider _cacheProvider;
   
-  public SectionSearchQueryPlanBuilder(IndexReader reader)
+  public SectionSearchQueryPlanBuilder(AtomicReader reader)
   {
     _reader = reader;
     _cacheProvider = (reader instanceof MetaDataCacheProvider ? (MetaDataCacheProvider)reader : null);

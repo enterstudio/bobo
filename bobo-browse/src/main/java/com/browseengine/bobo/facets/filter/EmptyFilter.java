@@ -10,8 +10,6 @@ import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 
 public class EmptyFilter extends RandomAccessFilter 
 {
-	private static final long serialVersionUID = 1L;
-
 	private static EmptyFilter instance = new EmptyFilter();
 	
 	private EmptyFilter()

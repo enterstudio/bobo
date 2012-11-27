@@ -5,20 +5,20 @@ package com.browseengine.bobo.search.section;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BytesRef;
 
 /**
  *
  */
 public class IntMetaDataQuery extends MetaDataQuery
-{
-  private static final long serialVersionUID = 1L;
-  
+{ 
   private Validator _validator;
 
   public static abstract class Validator
@@ -91,7 +91,7 @@ public class IntMetaDataQuery extends MetaDataQuery
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException
+  public Weight createWeight(IndexSearcher searcher) throws IOException
   {
     throw new UnsupportedOperationException();
   }
@@ -103,7 +103,7 @@ public class IntMetaDataQuery extends MetaDataQuery
   }
   
   @Override
-  public SectionSearchQueryPlan getPlan(IndexReader reader) throws IOException
+  public SectionSearchQueryPlan getPlan(AtomicReader reader) throws IOException
   {
     return new IntMetaDataNodeNoCache(_term, reader, _validator);
   }
@@ -117,10 +117,10 @@ public class IntMetaDataQuery extends MetaDataQuery
   public static class IntMetaDataNodeNoCache extends AbstractTerminalNode
   {
     private final Validator _validator;
-    private byte[] _data;
+    private BytesRef _data;
     private int _dataLen;
 
-    public IntMetaDataNodeNoCache(Term term, IndexReader reader, Validator validator)
+    public IntMetaDataNodeNoCache(Term term, AtomicReader reader, Validator validator)
       throws IOException
     {
       super(term, reader);
@@ -141,22 +141,25 @@ public class IntMetaDataQuery extends MetaDataQuery
       
       if(targetSec <= _curSec) targetSec = _curSec + 1;
 
+   
       if(_dataLen == -1 && _posLeft > 0)
       {
         _tp.nextPosition();
-        if(_tp.isPayloadAvailable())
+        BytesRef payload = _tp.getPayload();
+        if(payload != null)
         {
-          _dataLen = _tp.getPayloadLength();
-          _data = _tp.getPayload(_data, 0);
+          _dataLen = payload.length;
+          _data = payload;
         }
       }
       int offset = targetSec * 4;
+      byte[] bytes = _data.bytes;
       while(offset + 4 <= _dataLen)
       {
-        int datum = ((_data[offset] & 0xff) |
-                     ((_data[offset + 1] & 0xff) << 8) |
-                     ((_data[offset + 2] & 0xff) << 16) |
-                     ((_data[offset + 3] & 0xff) << 24));
+        int datum = ((bytes[_data.offset+offset] & 0xff) |
+                     ((bytes[_data.offset+offset + 1] & 0xff) << 8) |
+                     ((bytes[_data.offset+offset + 2] & 0xff) << 16) |
+                     ((bytes[_data.offset+offset + 3] & 0xff) << 24));
         
         if(_validator.validate(datum))
         {

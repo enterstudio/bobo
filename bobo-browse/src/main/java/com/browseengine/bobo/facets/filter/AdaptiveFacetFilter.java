@@ -7,11 +7,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
@@ -22,11 +23,6 @@ import com.kamikaze.docidset.impl.OrDocIdSet;
 
 public class AdaptiveFacetFilter extends RandomAccessFilter {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
 	private static Logger logger = Logger.getLogger(AdaptiveFacetFilter.class);
 	
 	private final RandomAccessFilter _facetFilter;
@@ -58,10 +54,10 @@ public class AdaptiveFacetFilter extends RandomAccessFilter {
 	 }
 	
 	@Override
-	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader)
+	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs)
 			throws IOException {
 	
-      RandomAccessDocIdSet innerDocSet = _facetFilter.getRandomAccessDocIdSet(reader);
+      RandomAccessDocIdSet innerDocSet = _facetFilter.getRandomAccessDocIdSet(reader, liveDocs);
       if (innerDocSet==EmptyDocIdSet.getInstance()){
     	  return innerDocSet;
       }
@@ -100,10 +96,10 @@ public class AdaptiveFacetFilter extends RandomAccessFilter {
 
 		private final RandomAccessDocIdSet _innerSet;
 		private final ArrayList<String> _vals;
-		private final IndexReader _reader;
+		private final AtomicReader _reader;
 		private final String _name;
 		private final static int OR_THRESHOLD = 5;
-		TermListRandomAccessDocIdSet(String name,RandomAccessDocIdSet innerSet,ArrayList<String> vals,IndexReader reader){
+		TermListRandomAccessDocIdSet(String name,RandomAccessDocIdSet innerSet,ArrayList<String> vals,AtomicReader reader){
 			_name = name;
 			_innerSet = innerSet;
 			_vals = vals;
@@ -112,51 +108,19 @@ public class AdaptiveFacetFilter extends RandomAccessFilter {
 		
 		public static class TermDocIdSet extends DocIdSet{
 			final Term term;
-      private final IndexReader reader;
-			public TermDocIdSet(IndexReader reader, String name, String val){
+      private final AtomicReader reader;
+			public TermDocIdSet(AtomicReader reader, String name, String val){
 				this.reader = reader;
         term = new Term(name,val);
 			}
 			
 			@Override
 			public DocIdSetIterator iterator() throws IOException {
-				final TermDocs td = reader.termDocs(term);
+			  final DocsEnum td = reader.termDocsEnum(term);
 				if (td==null){
 					return EmptyDocIdSet.getInstance().iterator();
 				}
-				return new DocIdSetIterator(){
-
-					private int _doc = -1;
-					@Override
-					public int advance(int target) throws IOException {
-						if (td.skipTo(target)){
-							_doc = td.doc();
-						}
-						else{
-							td.close();
-							_doc= DocIdSetIterator.NO_MORE_DOCS;
-						}
-						return _doc;
-					}
-
-					@Override
-					public int docID() {
-						return _doc;
-					}
-
-					@Override
-					public int nextDoc() throws IOException {
-						if (td.next()){
-							_doc = td.doc();
-						}
-						else{
-							td.close();
-							_doc = DocIdSetIterator.NO_MORE_DOCS;
-						}
-						return _doc;
-					}
-					
-				};
+				return td;
 			}
 		}
 

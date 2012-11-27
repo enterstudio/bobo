@@ -3,20 +3,17 @@ package com.browseengine.bobo.facets.filter;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.facets.data.FacetDataCache;
-import com.browseengine.bobo.facets.data.MultiValueFacetDataCache;
 import com.browseengine.bobo.util.BigSegmentedArray;
 
 public class CompactMultiValueFacetFilter extends RandomAccessFilter {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;	
+	
 	private FacetHandler<FacetDataCache> _facetHandler;
 	
 	private final String[] _vals;
@@ -105,7 +102,7 @@ public class CompactMultiValueFacetFilter extends RandomAccessFilter {
 	}
 	
 	@Override
-	public RandomAccessDocIdSet getRandomAccessDocIdSet(final BoboIndexReader reader) throws IOException 
+	public RandomAccessDocIdSet getRandomAccessDocIdSet(final BoboIndexReader reader, Bits liveDocs) throws IOException 
 	{
 		final FacetDataCache dataCache = _facetHandler.getFacetData(reader);
 		final int[] indexes = FacetDataCache.convert(dataCache,_vals);

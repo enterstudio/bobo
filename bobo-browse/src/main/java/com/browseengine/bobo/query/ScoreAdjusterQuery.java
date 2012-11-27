@@ -3,11 +3,14 @@ package com.browseengine.bobo.query;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
 
 public class ScoreAdjusterQuery extends Query
 {
@@ -34,32 +37,29 @@ public class ScoreAdjusterQuery extends Query
       return _innerWeight.getQuery();
     }
 
-    public float getValue()
+    @Override
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+        boolean topScorer, Bits acceptDocs) throws IOException
     {
-      return _innerWeight.getValue();
+      Scorer innerScorer = _innerWeight.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+      return _scorerBuilder.createScorer(innerScorer, context.reader(), scoreDocsInOrder, topScorer);
     }
-
-    public float sumOfSquaredWeights() throws IOException
+    
+    @Override
+    public Explanation explain(AtomicReaderContext readerCtx, int doc) throws IOException
     {
-      return _innerWeight.sumOfSquaredWeights();
-    }
-
-    public void normalize(float queryNorm)
-    {
-      _innerWeight.normalize(queryNorm);
+      Explanation innerExplain = _innerWeight.explain(readerCtx, doc);
+      return _scorerBuilder.explain(readerCtx.reader(), doc,innerExplain);
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException
-    {
-      Scorer innerScorer = _innerWeight.scorer(reader, scoreDocsInOrder, topScorer);
-      return _scorerBuilder.createScorer(innerScorer, reader, scoreDocsInOrder, topScorer);
+    public float getValueForNormalization() throws IOException {
+      return _innerWeight.getValueForNormalization();
     }
 
-    public Explanation explain(IndexReader reader, int doc) throws IOException
-    {
-      Explanation innerExplain = _innerWeight.explain(reader, doc);
-      return _scorerBuilder.explain(reader, doc,innerExplain);
+    @Override
+    public void normalize(float norm, float topLevelBoost) {
+      _innerWeight.normalize(norm, topLevelBoost);
     }
   }
 
@@ -81,7 +81,7 @@ public class ScoreAdjusterQuery extends Query
 
 
 @Override
-  public Weight createWeight(Searcher searcher) throws IOException
+  public Weight createWeight(IndexSearcher searcher) throws IOException
   {
     return new ScoreAdjusterWeight(_query.createWeight(searcher));
   }

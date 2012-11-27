@@ -3,6 +3,7 @@ package com.browseengine.bobo.facets.filter;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
@@ -13,17 +14,10 @@ import com.browseengine.bobo.util.BigSegmentedArray;
 
 public class FacetFilter extends RandomAccessFilter 
 {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
-
-  private final FacetHandler<FacetDataCache> _facetHandler;
+  private final FacetHandler<FacetDataCache<?>> _facetHandler;
 	protected final String _value;
 	
-	public FacetFilter(FacetHandler<FacetDataCache> facetHandler,String value)
+	public FacetFilter(FacetHandler<FacetDataCache<?>> facetHandler,String value)
 	{
 		_facetHandler = facetHandler;
 		_value=value;
@@ -32,7 +26,7 @@ public class FacetFilter extends RandomAccessFilter
   public double getFacetSelectivity(BoboIndexReader reader)
   {
     double selectivity = 0;
-    FacetDataCache dataCache = _facetHandler.getFacetData(reader);
+    FacetDataCache<?> dataCache = _facetHandler.getFacetData(reader);
     int idx = dataCache.valArray.indexOf(_value);
     if(idx<0)
     {
@@ -51,7 +45,7 @@ public class FacetFilter extends RandomAccessFilter
 		protected final int _maxID;
         protected final BigSegmentedArray _orderArray;
 		
-		public FacetDocIdSetIterator(FacetDataCache dataCache,int index)
+		public FacetDocIdSetIterator(FacetDataCache<?> dataCache,int index)
 		{
 			_index=index;
 			_doc=Math.max(-1,dataCache.minIDs[_index]-1);
@@ -83,9 +77,9 @@ public class FacetFilter extends RandomAccessFilter
 	}
 
 	@Override
-	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException 
+	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException 
 	{
-		FacetDataCache dataCache = _facetHandler.getFacetData(reader);
+		FacetDataCache<?> dataCache = _facetHandler.getFacetData(reader);
 		int index = dataCache.valArray.indexOf(_value);
 		if (index < 0)
 		{
@@ -99,11 +93,11 @@ public class FacetFilter extends RandomAccessFilter
 
 	public static class FacetDataRandomAccessDocIdSet extends RandomAccessDocIdSet{
 
-		private final FacetDataCache _dataCache;
+		private final FacetDataCache<?> _dataCache;
 	    private final BigSegmentedArray _orderArray;
 	    private final int _index;
 	    
-	    FacetDataRandomAccessDocIdSet(FacetDataCache dataCache,int index){
+	    FacetDataRandomAccessDocIdSet(FacetDataCache<?> dataCache,int index){
 	    	_dataCache = dataCache;
 	    	_orderArray = _dataCache.orderArray;
 	    	_index = index;

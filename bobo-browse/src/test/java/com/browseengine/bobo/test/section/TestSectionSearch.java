@@ -9,14 +9,13 @@ import java.io.StringReader;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -26,6 +25,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import com.browseengine.bobo.analysis.section.IntMetaDataTokenStream;
 import com.browseengine.bobo.analysis.section.SectionTokenStream;
@@ -48,7 +48,7 @@ public class TestSectionSearch extends TestCase
   //@Override
   protected void setUp() throws Exception {
     directory = new RAMDirectory();
-    analyzer = new WhitespaceAnalyzer();
+    analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
     writer = new IndexWriter(directory, analyzer, true, MaxFieldLength.UNLIMITED);
     addDoc("1", new String[]{ "aa","bb"}, new String[]{"aaa","aaa"}, new int[]{100,200});
     addDoc("2", new String[]{ "aa","bb"}, new String[]{"aaa","bbb"}, new int[]{200,200});
@@ -64,7 +64,6 @@ public class TestSectionSearch extends TestCase
   
   //@Override
   protected void tearDown() throws IOException {
-    searcher.close();
     writer.close();
     directory.close();
     analyzer = null;

@@ -24,7 +24,7 @@ import com.browseengine.bobo.facets.filter.RandomAccessFilter;
 import com.browseengine.bobo.facets.filter.RandomAccessNotFilter;
 import com.browseengine.bobo.sort.DocComparatorSource;
 
-public class PathFacetHandler extends FacetHandler<FacetDataCache> 
+public class PathFacetHandler extends FacetHandler<FacetDataCache<?>> 
 {
 	private static final String DEFAULT_SEP = "/";
 	

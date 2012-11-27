@@ -3,6 +3,7 @@ package com.browseengine.bobo.facets.filter;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.EmptyDocIdSet;
@@ -13,10 +14,7 @@ import com.browseengine.bobo.facets.range.MultiDataCacheBuilder;
 import com.browseengine.bobo.util.BigNestedIntArray;
 
 public class MultiValueFacetFilter extends RandomAccessFilter 
-{
-    private static final long serialVersionUID = 1L;
-    
-   
+{  
     private final String _val;
 
 
@@ -72,7 +70,7 @@ public class MultiValueFacetFilter extends RandomAccessFilter
     }
 
     @Override
-    public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException {    	
+    public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException {    	
       final MultiValueFacetDataCache dataCache = multiDataCacheBuilder.build(reader);  
       final int index = dataCache.valArray.indexOf(_val);
         final BigNestedIntArray nestedArray = dataCache._nestedArray; 

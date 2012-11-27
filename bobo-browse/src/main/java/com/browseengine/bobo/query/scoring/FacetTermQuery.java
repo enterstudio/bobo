@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -16,6 +17,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseSelection;
@@ -124,9 +126,10 @@ public class FacetTermQuery extends Query {
         	_similarity = sim;
 		}
         
-		public Explanation explain(IndexReader reader, int docid)
+    @Override
+		public Explanation explain(AtomicReaderContext readerCtx, int docid)
 				throws IOException {
-			BoboIndexReader boboReader = (BoboIndexReader)reader;
+			BoboIndexReader boboReader = (BoboIndexReader)readerCtx.reader();
 			FacetHandler<?> fhandler = boboReader.getFacetHandler(FacetTermQuery.this._name);
 			if (fhandler!=null){
 				 BoboDocScorer scorer = null;
@@ -152,91 +155,29 @@ public class FacetTermQuery extends Query {
 			return FacetTermQuery.this;
 		}
 
-		public float getValue() {
-			return value;
-		}
-
-		public void normalize(float norm) {
-			value = getBoost();
-		}
-		
-		private final DocIdSetIterator buildIterator(final RandomAccessDocIdSet docset,final TermDocs td){
-			return new DocIdSetIterator(){
-				private int doc = DocIdSetIterator.NO_MORE_DOCS;
-				
-				@Override
-				public int advance(int target) throws IOException {
-					if (td.skipTo(target)){
-						doc = td.doc();
-						while(!docset.get(doc)){
-							if (td.next()){
-								doc = td.doc();
-							}
-							else{
-								doc = DocIdSetIterator.NO_MORE_DOCS;
-								break;
-							}
-						}
-						return doc;
-					}
-					else{
-						doc = DocIdSetIterator.NO_MORE_DOCS;
-						return doc;
-					}
-				}
-
-				@Override
-				public int docID() {
-					return doc;
-				}
-
-				@Override
-				public int nextDoc() throws IOException {
-					if (td.next()){
-						doc = td.doc();
-						while(!docset.get(doc)){
-							if (td.next()){
-								doc = td.doc();
-							}
-							else{
-								doc = DocIdSetIterator.NO_MORE_DOCS;
-								break;
-							}
-						}
-						return doc;
-					}
-					else{
-						doc = DocIdSetIterator.NO_MORE_DOCS;
-						return doc;
-					}
-				}
-				
-			};
-		}
-
 		@Override
-		public Scorer scorer(AtomicReader reader,boolean scoreDocsInOrder,boolean topScorer) throws IOException {
+		public Scorer scorer(AtomicReaderContext readerCtx,boolean scoreDocsInOrder,boolean topScorer,Bits acceptDocs) throws IOException {
+		  AtomicReader reader = readerCtx.reader();
 			if (reader instanceof BoboIndexReader){
 			  BoboIndexReader boboReader = (BoboIndexReader)reader;
-			  TermDocs termDocs = boboReader.termDocs(null);
 			  FacetHandler<?> fhandler = boboReader.getFacetHandler(FacetTermQuery.this._name);
 			  if (fhandler!=null){
 				 DocIdSetIterator dociter = null;
 				 RandomAccessFilter filter = fhandler.buildFilter(FacetTermQuery.this._sel);
 				 if (filter!=null){
-					 RandomAccessDocIdSet docset =filter.getRandomAccessDocIdSet(boboReader);
+					 RandomAccessDocIdSet docset =filter.getRandomAccessDocIdSet(boboReader, acceptDocs);
 					 if (docset!=null){
-						 dociter = buildIterator(docset, termDocs);
+						 dociter = docset.iterator();
 					 }
 				 }
 				 if (dociter==null){
-					 dociter = new MatchAllDocIdSetIterator(reader);
+					 dociter = new MatchAllDocIdSetIterator(boboReader);
 				 }
 				 BoboDocScorer scorer = null;
 				 if (fhandler instanceof FacetScoreable){
 					 scorer = ((FacetScoreable)fhandler).getDocScorer(boboReader,_scoringFactory, _boostMap);
 				 }
-				 return new FacetTermScorer(_similarity,dociter,scorer);
+				 return new FacetTermScorer(this,dociter,scorer);
 			  }
 			  else{
 				  logger.error("FacetHandler is not defined for the field: "+FacetTermQuery.this._name);
@@ -248,9 +189,15 @@ public class FacetTermQuery extends Query {
 			}
 		}
 
-		public float sumOfSquaredWeights() throws IOException {
-			return 0;
-		}
+    @Override
+    public float getValueForNormalization() throws IOException {
+      return value;
+    }
+
+    @Override
+    public void normalize(float norm, float topLevelBoost) {
+      value = getBoost();
+    }
 		
 	}
 	
@@ -258,8 +205,8 @@ public class FacetTermQuery extends Query {
 		private final DocIdSetIterator _docSetIter;
 		private final BoboDocScorer _scorer;
 		
-		protected FacetTermScorer(Similarity similarity,DocIdSetIterator docidsetIter,BoboDocScorer scorer) {
-			super(similarity);
+		protected FacetTermScorer(Weight weight,DocIdSetIterator docidsetIter,BoboDocScorer scorer) {
+			super(weight);
 			_docSetIter = docidsetIter;
 			_scorer = scorer;
 		}
@@ -283,6 +230,11 @@ public class FacetTermQuery extends Query {
 		public int advance(int target) throws IOException {
 			return _docSetIter.advance(target);
 		}
+
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
 		
 	}
 

@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
@@ -11,8 +12,6 @@ import com.kamikaze.docidset.impl.NotDocIdSet;
 
 public class RandomAccessNotFilter extends RandomAccessFilter
 {
-  private static final long serialVersionUID = 1L;
-
   protected final RandomAccessFilter _innerFilter;
   
   public RandomAccessNotFilter(RandomAccessFilter innerFilter)
@@ -28,9 +27,9 @@ public class RandomAccessNotFilter extends RandomAccessFilter
   }
   
   @Override
-  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException
+  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException
   {
-    final RandomAccessDocIdSet innerDocIdSet = _innerFilter.getRandomAccessDocIdSet(reader);
+    final RandomAccessDocIdSet innerDocIdSet = _innerFilter.getRandomAccessDocIdSet(reader, liveDocs);
     final DocIdSet notInnerDocIdSet = new NotDocIdSet(innerDocIdSet, reader.maxDoc());
     return new RandomAccessDocIdSet()
     {

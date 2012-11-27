@@ -13,21 +13,19 @@ import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
 
 public abstract class RandomAccessFilter extends Filter
 {
-  private static final long serialVersionUID = 1L;
-
   @Override 
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException
   {
 	AtomicReader reader = context.reader();
 	if (reader instanceof BoboIndexReader){
-      return getRandomAccessDocIdSet((BoboIndexReader)reader,acceptDocs);
+      return getRandomAccessDocIdSet((BoboIndexReader)reader, acceptDocs);
 	}
 	else{
 	  throw new IllegalStateException("reader not instance of "+BoboIndexReader.class);
 	}
   }
   
-  public abstract RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader,Bits acceptDocs) throws IOException;
+  public abstract RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException;
   public double getFacetSelectivity(BoboIndexReader reader) { return 0.50; }
   
 }

@@ -227,9 +227,9 @@ public class FacetDataCache<T> implements Serializable {
   }
 
   public static class FacetDocComparatorSource extends DocComparatorSource {
-    private FacetHandler<FacetDataCache> _facetHandler;
+    private FacetHandler<FacetDataCache<?>> _facetHandler;
 
-    public FacetDocComparatorSource(FacetHandler<FacetDataCache> facetHandler) {
+    public FacetDocComparatorSource(FacetHandler<FacetDataCache<?>> facetHandler) {
       _facetHandler = facetHandler;
     }
 

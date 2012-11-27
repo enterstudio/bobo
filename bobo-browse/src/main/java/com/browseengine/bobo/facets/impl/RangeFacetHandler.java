@@ -28,7 +28,7 @@ import com.browseengine.bobo.query.scoring.FacetScoreable;
 import com.browseengine.bobo.query.scoring.FacetTermScoringFunctionFactory;
 import com.browseengine.bobo.sort.DocComparatorSource;
 
-public class RangeFacetHandler extends FacetHandler<FacetDataCache> implements FacetScoreable{
+public class RangeFacetHandler extends FacetHandler<FacetDataCache<?>> implements FacetScoreable{
 	private static Logger logger = Logger.getLogger(RangeFacetHandler.class);
 	protected final String _indexFieldName;
 	protected final TermListFactory _termListFactory;

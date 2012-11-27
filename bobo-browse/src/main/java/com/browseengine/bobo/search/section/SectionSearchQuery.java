@@ -10,32 +10,23 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
 /**
  *
  */
 public class SectionSearchQuery extends Query
-{
-  private static final long serialVersionUID = 1L;
-  
+{ 
   private Query _query;
   
   private class SectionSearchWeight extends Weight
   {
-    private static final long serialVersionUID = 1L;
     
     float _weight;
-    Similarity _similarity;
-
-    public SectionSearchWeight(Similarity similarity) throws IOException
-    {
-      _similarity = similarity;
-    }
 
     public String toString()
     {
@@ -47,26 +38,9 @@ public class SectionSearchQuery extends Query
       return SectionSearchQuery.this;
     }
 
-    public float getValue()
-    {
-      return getBoost();
-    }
-
-    public float sumOfSquaredWeights()
-    {
-      _weight = getBoost();
-      return _weight * _weight;
-    }
-
-    @Override
-    public void normalize(float queryNorm)
-    {
-      _weight *= queryNorm;
-    }
-
     public Scorer scorer(AtomicReader reader,Bits accepted) throws IOException
     {
-      SectionSearchScorer scorer = new SectionSearchScorer(_similarity, getValue(), reader);
+      SectionSearchScorer scorer = new SectionSearchScorer(this, getValueForNormalization(), reader);
       
       return scorer;
     }
@@ -88,6 +62,16 @@ public class SectionSearchQuery extends Query
       AtomicReader reader = context.reader();
       return scorer(reader,acceptDocs);
     }
+
+    @Override
+    public float getValueForNormalization() throws IOException {
+      return getBoost();
+    }
+
+    @Override
+    public void normalize(float queryNorm, float topLevelBoost) {
+      _weight *= queryNorm * topLevelBoost;
+    }
   }
 
   public class SectionSearchScorer extends Scorer
@@ -97,10 +81,10 @@ public class SectionSearchQuery extends Query
     private boolean          _more = true; // more hits
     private SectionSearchQueryPlan _plan;
     
-    public SectionSearchScorer(Similarity similarity, float score, IndexReader reader)
+    public SectionSearchScorer(Weight weight, float score, AtomicReader reader)
       throws IOException
     {
-      super(similarity);
+      super(weight);
       _curScr = score;
       
       SectionSearchQueryPlanBuilder builer = new SectionSearchQueryPlanBuilder(reader);
@@ -146,6 +130,11 @@ public class SectionSearchQuery extends Query
       }
       return _curDoc;
     }
+
+    @Override
+    public float freq() throws IOException {
+      return 1;
+    }
   }
   
   /**
@@ -167,9 +156,9 @@ public class SectionSearchQuery extends Query
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException
+  public Weight createWeight(IndexSearcher searcher) throws IOException
   {
-    return new SectionSearchWeight(searcher);
+    return new SectionSearchWeight();
   }
 
   @Override

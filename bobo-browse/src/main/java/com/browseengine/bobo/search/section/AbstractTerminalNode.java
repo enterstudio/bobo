@@ -5,7 +5,8 @@ package com.browseengine.bobo.search.section;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -14,15 +15,14 @@ import org.apache.lucene.search.DocIdSetIterator;
  */
 public abstract class AbstractTerminalNode extends SectionSearchQueryPlan
 {
-  protected TermPositions _tp;
+  protected DocsAndPositionsEnum _tp;
   protected int _posLeft;
   protected int _curPos;
   
-  public AbstractTerminalNode(Term term, IndexReader reader) throws IOException
+  public AbstractTerminalNode(Term term, AtomicReader reader) throws IOException
   {
     super();
-    _tp = reader.termPositions();
-    _tp.seek(term);
+    reader.termPositionsEnum(term);
     _posLeft = 0;
   }
   
@@ -31,9 +31,9 @@ public abstract class AbstractTerminalNode extends SectionSearchQueryPlan
   {
     if(targetDoc <= _curDoc) targetDoc = _curDoc + 1;
     
-    if(_tp.skipTo(targetDoc))
+    int _curDoc;
+    if((_curDoc = _tp.advance(targetDoc)) != DocIdSetIterator.NO_MORE_DOCS)
     {
-      _curDoc = _tp.doc();
       _posLeft = _tp.freq();
       _curSec = -1;
       _curPos = -1;
@@ -42,7 +42,6 @@ public abstract class AbstractTerminalNode extends SectionSearchQueryPlan
     else
     {
       _curDoc = DocIdSetIterator.NO_MORE_DOCS;
-      _tp.close();
       return _curDoc;
     }
   }

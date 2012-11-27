@@ -3,16 +3,18 @@
  */
 package com.browseengine.bobo.util.test;
 
+import java.util.Arrays;
+import java.util.Random;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.OpenBitSet;
+
 import com.browseengine.bobo.util.BigIntBuffer;
 import com.browseengine.bobo.util.BigNestedIntArray;
 import com.browseengine.bobo.util.BigNestedIntArray.BufferedLoader;
 import com.browseengine.bobo.util.BigNestedIntArray.Loader;
-import org.apache.lucene.util.BitVector;
-
-import java.util.Random;
-import java.util.Arrays;
-
-import junit.framework.TestCase;
 
 /**
  * @author ymatsuda
@@ -320,7 +322,7 @@ public class BigNestedIntArrayTest extends TestCase
     BigNestedIntArray nestedArray = new BigNestedIntArray();
     nestedArray.load(maxId, loader);
 
-    BitVector filter = new BitVector(numVals);
+    OpenBitSet filter = new OpenBitSet(numVals);
     for (int i = 0; i < numVals; i++)
     {
       if (i % 2 == 0)

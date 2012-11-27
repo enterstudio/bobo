@@ -6,6 +6,7 @@ package com.browseengine.bobo.facets.filter;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.docidset.RandomAccessDocIdSet;
@@ -19,8 +20,6 @@ import com.browseengine.bobo.util.GeoMatchUtil;
  *
  */
 public class GeoFacetFilter extends RandomAccessFilter{
-
-	private static final long serialVersionUID = 1L;
 	private final FacetHandler<GeoFacetData> _handler;
 	private final float _lat;
 	private final float _lon;
@@ -47,7 +46,7 @@ public class GeoFacetFilter extends RandomAccessFilter{
 	 * @see com.browseengine.bobo.facets.filter.RandomAccessFilter#getRandomAccessDocIdSet(com.browseengine.bobo.api.BoboIndexReader)
 	 */
 	@Override
-	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader)
+	public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs)
 			throws IOException {
 		int maxDoc = reader.maxDoc();
 

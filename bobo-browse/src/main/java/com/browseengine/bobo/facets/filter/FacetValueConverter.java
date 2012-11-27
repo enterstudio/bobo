@@ -4,7 +4,7 @@ import com.browseengine.bobo.facets.data.FacetDataCache;
 
 public interface FacetValueConverter {
 	public static FacetValueConverter DEFAULT = new DefaultFacetDataCacheConverter();
-	int[] convert(FacetDataCache dataCache,String[] vals);
+	int[] convert(FacetDataCache<?> dataCache,String[] vals);
 	
 	public static class DefaultFacetDataCacheConverter implements FacetValueConverter{		
 		public DefaultFacetDataCacheConverter(){

@@ -23,17 +23,15 @@ public abstract class SectionSearchQueryPlan
   /*
    * Priority queue of Nodes.
    */
-  static public class NodeQueue extends PriorityQueue
+  static public class NodeQueue extends PriorityQueue<SectionSearchQueryPlan>
   {
     public NodeQueue(int size)
     {
-      initialize(size);
+      super(size);
     }
 
-    protected boolean lessThan(Object objA, Object objB)
+    protected boolean lessThan(SectionSearchQueryPlan nodeA, SectionSearchQueryPlan nodeB)
     {
-      SectionSearchQueryPlan nodeA = (SectionSearchQueryPlan)objA;
-      SectionSearchQueryPlan nodeB = (SectionSearchQueryPlan)objB;
       if(nodeA._curDoc == nodeB._curDoc)
       {
         return (nodeA._curSec < nodeB._curSec);

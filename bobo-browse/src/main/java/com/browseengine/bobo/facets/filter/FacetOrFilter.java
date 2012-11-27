@@ -2,8 +2,8 @@ package com.browseengine.bobo.facets.filter;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 
 import com.browseengine.bobo.api.BoboIndexReader;
@@ -15,26 +15,22 @@ import com.browseengine.bobo.util.BigSegmentedArray;
 
 public class FacetOrFilter extends RandomAccessFilter
 {
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
   
-  protected final FacetHandler<FacetDataCache> _facetHandler;
+  protected final FacetHandler<FacetDataCache<?>> _facetHandler;
   protected final String[] _vals;
   private final boolean _takeCompliment;
   private final FacetValueConverter _valueConverter;
   
-  public FacetOrFilter(FacetHandler<FacetDataCache> facetHandler, String[] vals)
+  public FacetOrFilter(FacetHandler<FacetDataCache<?>> facetHandler, String[] vals)
   {
     this(facetHandler,vals,false);
   }
   
-  public FacetOrFilter(FacetHandler<FacetDataCache> facetHandler, String[] vals,boolean takeCompliment){
+  public FacetOrFilter(FacetHandler<FacetDataCache<?>> facetHandler, String[] vals,boolean takeCompliment){
 	this(facetHandler,vals,takeCompliment,FacetValueConverter.DEFAULT);  
   }
   
-  public FacetOrFilter(FacetHandler<FacetDataCache> facetHandler, String[] vals,boolean takeCompliment,FacetValueConverter valueConverter)
+  public FacetOrFilter(FacetHandler<FacetDataCache<?>> facetHandler, String[] vals,boolean takeCompliment,FacetValueConverter valueConverter)
   {
     _facetHandler = facetHandler;
     _vals = vals;
@@ -45,7 +41,7 @@ public class FacetOrFilter extends RandomAccessFilter
   public double getFacetSelectivity(BoboIndexReader reader)
   {
     double selectivity = 0;
-    FacetDataCache dataCache = _facetHandler.getFacetData(reader);
+    FacetDataCache<?> dataCache = _facetHandler.getFacetData(reader);
     int accumFreq=0;
     for(String value : _vals)
     {
@@ -70,7 +66,7 @@ public class FacetOrFilter extends RandomAccessFilter
   }
   
   @Override
-  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader) throws IOException
+  public RandomAccessDocIdSet getRandomAccessDocIdSet(BoboIndexReader reader, Bits liveDocs) throws IOException
   {
     if (_vals.length == 0)
     {
@@ -86,10 +82,10 @@ public class FacetOrFilter extends RandomAccessFilter
 
 	private OpenBitSet _bitset;
 	private final BigSegmentedArray _orderArray;
-	private final FacetDataCache _dataCache;
+	private final FacetDataCache<?> _dataCache;
 	private final int[] _index;
 	
-	FacetOrRandomAccessDocIdSet(FacetHandler<FacetDataCache> facetHandler,BoboIndexReader reader,
+	FacetOrRandomAccessDocIdSet(FacetHandler<FacetDataCache<?>> facetHandler,BoboIndexReader reader,
 								String[] vals,FacetValueConverter valConverter,boolean takeCompliment){
 		_dataCache = facetHandler.getFacetData(reader);
 		_orderArray = _dataCache.orderArray;
@@ -125,12 +121,12 @@ public class FacetOrFilter extends RandomAccessFilter
   public static class FacetOrDocIdSetIterator extends DocIdSetIterator
   {
       protected int _doc;
-      protected final FacetDataCache _dataCache;
+      protected final FacetDataCache<?> _dataCache;
       protected int _maxID;
       protected final OpenBitSet _bitset;
       protected final BigSegmentedArray _orderArray;
       
-      public FacetOrDocIdSetIterator(FacetDataCache dataCache, OpenBitSet bitset)
+      public FacetOrDocIdSetIterator(FacetDataCache<?> dataCache, OpenBitSet bitset)
       {
           _dataCache=dataCache;
           _orderArray = dataCache.orderArray;

@@ -5,8 +5,11 @@ package com.browseengine.bobo.search.section;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
 
 /**
  *
@@ -16,7 +19,7 @@ public class IntMetaDataCache implements MetaDataCache
   private static final int MAX_SLOTS = 1024; 
   private static final int MISSING = Integer.MIN_VALUE;
   
-  private final IndexReader _reader;
+  private final AtomicReader _reader;
   private int[][] _list;
   
   private int _curPageNo;
@@ -24,7 +27,7 @@ public class IntMetaDataCache implements MetaDataCache
   private int _curSlot;
   private int _curData;
 
-  public IntMetaDataCache(Term term, IndexReader reader) throws IOException
+  public IntMetaDataCache(Term term, AtomicReader reader) throws IOException
   {
     _reader = reader;
     
@@ -43,7 +46,7 @@ public class IntMetaDataCache implements MetaDataCache
     _curPage = null;
   }
   
-  protected void add(int docid, byte[] data, int blen)
+  protected void add(int docid, BytesRef data)
   {
     int pageNo = docid / MAX_SLOTS;
     if(pageNo != _curPageNo)
@@ -69,20 +72,21 @@ public class IntMetaDataCache implements MetaDataCache
       _curPage[_curSlot++] = MISSING;
     }
 
-    if(blen <= 4)
+    if(data.length <= 4)
     {
       int val = 0;
-      if(blen == 0)
+      if(data.length == 0)
       {
         val = MISSING;
       }
       else
       {
+        byte[] bytes = data.bytes;
         for(int i = 0; i < 4; i++)
         {
           if(i >= data.length) break;
           
-          val |= ((data[i] & 0xff) << (i * 8));
+          val |= ((bytes[i+data.offset] & 0xff) << (i * 8));
         }
       }
       if (val >= 0) 
@@ -91,19 +95,19 @@ public class IntMetaDataCache implements MetaDataCache
       }
       else
       {
-        appendToTail(data, blen);
+        appendToTail(data);
       }
     }
     else
     {
-      appendToTail(data, blen);
+      appendToTail(data);
     }
     _curSlot++;
   }
   
-  private void appendToTail(byte[] data, int blen)
+  private void appendToTail(BytesRef data)
   {
-    int ilen = (blen + 3) / 4; // length in ints
+    int ilen = (data.length + 3) / 4; // length in ints
     
     if(_curPage.length <= _curData + ilen)
     {
@@ -111,11 +115,13 @@ public class IntMetaDataCache implements MetaDataCache
       _curPage = copyPage(new int[_curPage.length + Math.max((_curPage.length - MAX_SLOTS), ilen)]);
     }
     _curPage[_curSlot] = (- _curData);
-    _curData = copyByteToInt(data, 0, blen, _curPage, _curData);
+    _curData = copyByteToInt(data, _curPage, _curData);
   }
   
-  private int copyByteToInt(byte[] src, int off, int blen, int[] dst, int dstoff)
+  private int copyByteToInt(BytesRef data, int[] dst, int dstoff)
   {
+    int blen = data.length;
+    int off = data.offset;
     while(blen > 0)
     {
       int val = 0;
@@ -123,8 +129,8 @@ public class IntMetaDataCache implements MetaDataCache
       {
         blen--;
         
-        if(off >= src.length) break; // may not have all bytes            
-        val |= ((src[off++] & 0xff) << (i * 8));
+        if(off >= blen) break; // may not have all bytes            
+        val |= ((data.bytes[off++] & 0xff) << (i * 8));
       }
 
       dst[dstoff++] = val;
@@ -140,19 +146,18 @@ public class IntMetaDataCache implements MetaDataCache
 
   protected void loadPayload(Term term) throws IOException
   {
-    byte[] payloadBuf = null;
-    TermPositions tp = _reader.termPositions();
-    tp.seek(term);
-    while(tp.next())
+    DocsAndPositionsEnum tp = _reader.termPositionsEnum(term);
+    
+    int doc;
+    while((doc = tp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS)
     {
       if(tp.freq() > 0)
       {
         tp.nextPosition();
-        if(tp.isPayloadAvailable())
+        BytesRef payload = tp.getPayload();
+        if(payload != null)
         {
-          int len = tp.getPayloadLength();
-          payloadBuf = tp.getPayload(payloadBuf, 0);
-          add(tp.doc(), payloadBuf, len);
+          add(doc, payload);
         }
       }
     }
