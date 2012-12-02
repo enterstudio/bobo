@@ -36,9 +36,9 @@ import junit.framework.TestCase;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -48,7 +48,6 @@ import org.apache.lucene.store.RAMDirectory;
 
 import com.browseengine.bobo.api.BoboBrowser;
 import com.browseengine.bobo.api.BoboCompositeReader;
-import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseHit;
 import com.browseengine.bobo.api.BrowseRequest;
@@ -97,18 +96,37 @@ public class FacetNotValuesTest extends TestCase {
     ArrayList<Document> dataList=new ArrayList<Document>();
       String color = "red";
       String ID = Integer.toString(10);
+      
+      FieldType idType = new FieldType();
+      idType.setStored(false);
+      idType.setIndexed(true);
+      idType.setTokenized(false);
+      idType.setOmitNorms(true);
+      
+      FieldType colorType = new FieldType();
+      colorType.setStored(true);
+      colorType.setIndexed(true);
+      colorType.setTokenized(false);
+      colorType.setOmitNorms(true);
+      
+      FieldType numericType = new FieldType();
+      numericType.setStored(true);
+      numericType.setIndexed(true);
+      numericType.setNumericType(NumericType.INT);
+      
+      
       Document d=new Document();
-      d.add(new Field("id",ID,Field.Store.YES,Index.NOT_ANALYZED_NO_NORMS));
-      d.add(new Field("color",color,Field.Store.YES,Index.NOT_ANALYZED_NO_NORMS));
-      d.add(new NumericField("NUM").setIntValue(10));
+      d.add(new Field("id",ID,idType));
+      d.add(new Field("color",color,colorType));
+      d.add(new Field("NUM","10",numericType));
       dataList.add(d);
       
        color = "green";
        ID = Integer.toString(11);
        d=new Document();
-      d.add(new Field("id",ID,Field.Store.YES,Index.NOT_ANALYZED_NO_NORMS));
-      d.add(new Field("color",color,Field.Store.YES,Index.NOT_ANALYZED_NO_NORMS));
-      d.add(new NumericField("NUM").setIntValue(11));
+      d.add(new Field("id",ID,idType));
+      d.add(new Field("color",color,colorType));
+      d.add(new Field("NUM","11",numericType));
       dataList.add(d);
       
     
@@ -117,13 +135,26 @@ public class FacetNotValuesTest extends TestCase {
   
   public Document[] createData(){
       ArrayList<Document> dataList=new ArrayList<Document>();
+
+      FieldType idType = new FieldType();
+      idType.setStored(false);
+      idType.setIndexed(true);
+      idType.setTokenized(false);
+      idType.setOmitNorms(true);
+      
+      FieldType colorType = new FieldType();
+      colorType.setStored(true);
+      colorType.setIndexed(true);
+      colorType.setTokenized(false);
+      colorType.setOmitNorms(true);
+      
       for(int i=0; i<_documentSize; i++)
       {
         String color = (i%2 == 0) ? "red" : "green";
         String ID = Integer.toString(i);
         Document d=new Document();
-        d.add(new Field("id",ID,Field.Store.YES,Index.NOT_ANALYZED_NO_NORMS));
-        d.add(new Field("color",color,Field.Store.YES,Index.NOT_ANALYZED_NO_NORMS));
+        d.add(new Field("id",ID,idType));
+        d.add(new Field("color",color,colorType));
         dataList.add(d);
       }
       

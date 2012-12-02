@@ -7,18 +7,18 @@ import java.util.List;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import com.browseengine.bobo.api.BoboBrowser;
-import com.browseengine.bobo.api.BoboIndexReader;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
@@ -43,9 +43,14 @@ public class TestPathMultiVal extends TestCase {
 
     private void addMetaDataField(Document doc, String name,String[] vals)
     {
+      FieldType metaType = new FieldType();
+      metaType.setStored(false);
+      metaType.setIndexed(true);
+      metaType.setTokenized(false);
+      metaType.setOmitNorms(true);
+      
       for (String val : vals){
-        Field field = new Field(name, val,Store.NO,Index.NOT_ANALYZED_NO_NORMS);
-        field.setOmitTermFreqAndPositions(true);
+        Field field = new Field(name, val,metaType);
         doc.add(field);
       }
     }
@@ -53,20 +58,22 @@ public class TestPathMultiVal extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 	    directory = new RAMDirectory();
-	    analyzer = new WhitespaceAnalyzer();
-	    IndexWriter writer = new IndexWriter(directory, analyzer, true, MaxFieldLength.UNLIMITED);
+	    analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
+	    IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+	    IndexWriter writer = new IndexWriter(directory, conf);
 	    Document doc = new Document();
 	    addMetaDataField(doc,PathHandlerName,new String[]{"/a/b/c","/a/b/d"});
 	    writer.addDocument(doc);
 	    writer.commit();
+	    writer.close();
 	    
 	    PathFacetHandler pathHandler = new PathFacetHandler("path",true);
 	    facetHandlers.add(pathHandler);
 	}
 	
 	public void testMultiValPath() throws Exception{
-		IndexReader reader = IndexReader.open(directory,true);
-		BoboIndexReader boboReader = BoboIndexReader.getInstance(reader, facetHandlers);
+		DirectoryReader reader = DirectoryReader.open(directory);
+		BoboCompositeReader boboReader = new BoboCompositeReader(reader, facetHandlers);
 		
 		BoboBrowser browser = new BoboBrowser(boboReader);
 		BrowseRequest req = new BrowseRequest();
@@ -92,5 +99,6 @@ public class TestPathMultiVal extends TestCase {
 		assertEquals(1,facets.size());
 		BrowseFacet facet = facets.get(0);
 		assertEquals(2,facet.getFacetValueHitCount());
+		browser.close();
 	}
 }
