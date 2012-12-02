@@ -40,6 +40,10 @@ public class BoboCompositeReader extends BaseCompositeReader<BoboIndexReader>{
     this(subReaders,true);
   }
   
+  public BoboCompositeReader(IndexReader reader, Collection<FacetHandler<?>> facetHandlers) throws IOException{
+    this(reader,facetHandlers,null,true);
+  }
+  
   public BoboCompositeReader(IndexReader reader, Collection<FacetHandler<?>> facetHandlers,
       Collection<RuntimeFacetHandlerFactory<FacetHandlerInitializerParam,?>> facetHandlerFactories) throws IOException{
     this(reader,facetHandlers,facetHandlerFactories,true);

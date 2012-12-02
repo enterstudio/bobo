@@ -29,7 +29,6 @@ package com.browseengine.bobo.test;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import junit.framework.TestCase;
@@ -37,18 +36,18 @@ import junit.framework.TestCase;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import com.browseengine.bobo.api.BoboBrowser;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseHit;
@@ -56,7 +55,6 @@ import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
 import com.browseengine.bobo.api.BrowseSelection;
 import com.browseengine.bobo.facets.FacetHandler;
-import com.browseengine.bobo.facets.data.PredefinedTermListFactory;
 import com.browseengine.bobo.facets.impl.RangeFacetHandler;
 import com.browseengine.bobo.facets.impl.SimpleFacetHandler;
 import com.browseengine.bobo.index.BoboIndexer;
@@ -140,8 +138,6 @@ public class FacetNotValuesTest extends TestCase {
       TestDataDigester testDigester=new TestDataDigester(_facetHandlers,data);
       BoboIndexer indexer=new BoboIndexer(testDigester,dir);
       indexer.index();
-      IndexReader r = IndexReader.open(dir,false);
-      r.close();
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();
     } catch (IOException e) {
@@ -159,7 +155,7 @@ public class FacetNotValuesTest extends TestCase {
       TestDataDigester testDigester=new TestDataDigester(_facetHandlers,data);
       BoboIndexer indexer=new BoboIndexer(testDigester,dir);
       indexer.index();
-      IndexReader r = IndexReader.open(dir,false);
+      DirectoryReader r = DirectoryReader.open(dir);
       r.close();
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();
@@ -198,8 +194,8 @@ public class FacetNotValuesTest extends TestCase {
     int expectedHitNum = (_documentSize/2) - 1;
     try {
       Directory ramIndexDir = createIndex();
-      IndexReader srcReader=IndexReader.open(ramIndexDir,true);
-      boboBrowser = new BoboBrowser(BoboIndexReader.getInstance(srcReader,_facetHandlers, null));
+      DirectoryReader srcReader=DirectoryReader.open(ramIndexDir);
+      boboBrowser = new BoboBrowser(new BoboCompositeReader(srcReader,_facetHandlers, null));
       result = boboBrowser.browse(br);
       
       assertEquals(expectedHitNum,result.getNumHits());
@@ -245,8 +241,8 @@ public class FacetNotValuesTest extends TestCase {
     
     try {
       Directory ramIndexDir = createIndexTwo();
-      IndexReader srcReader=IndexReader.open(ramIndexDir,true);
-      boboBrowser = new BoboBrowser(BoboIndexReader.getInstance(srcReader,_facetHandlers, null));
+      DirectoryReader srcReader=DirectoryReader.open(ramIndexDir);
+      boboBrowser = new BoboBrowser(new BoboCompositeReader(srcReader,_facetHandlers, null));
       
       BrowseRequest br=new BrowseRequest();
       br.setCount(20);

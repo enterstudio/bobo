@@ -60,8 +60,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -77,11 +81,13 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
 import com.browseengine.bobo.api.BoboBrowser;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BoboCustomSortField;
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.BrowseHit;
+import com.browseengine.bobo.api.BrowseHit.TermFrequencyPair;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
 import com.browseengine.bobo.api.BrowseSelection;
@@ -157,14 +163,14 @@ public class BoboTestCase extends TestCase {
 	}
 	
 
-	private BoboIndexReader newIndexReader() throws IOException{
+	private BoboCompositeReader newIndexReader() throws IOException{
 		return newIndexReader(true);
 	}
 	
-	private BoboIndexReader newIndexReader(boolean readonly) throws IOException{
-	  IndexReader srcReader=IndexReader.open(_indexDir,readonly);
+	private BoboCompositeReader newIndexReader(boolean readonly) throws IOException{
+	  DirectoryReader srcReader=DirectoryReader.open(_indexDir);
       try{
-        BoboIndexReader reader= BoboIndexReader.getInstance(srcReader,_fconf, null);
+        BoboCompositeReader reader= new BoboCompositeReader(srcReader,_fconf, null);
         return reader;
       }
       catch(IOException ioe){
@@ -181,8 +187,12 @@ public class BoboTestCase extends TestCase {
 		
 	public static Field buildMetaField(String name,String val)
 	{
-	  Field f = new Field(name,val,Field.Store.NO,Index.NOT_ANALYZED_NO_NORMS);
-	  f.setOmitTermFreqAndPositions(true);
+	  FieldType ft = new FieldType();
+	  ft.setStored(false);
+	  ft.setIndexed(true);
+	  ft.setTokenized(false);
+	  ft.setOmitNorms(true);
+	  Field f = new Field(name,val,ft);
 	  return f;
 	}
 	
@@ -454,6 +464,10 @@ public class BoboTestCase extends TestCase {
 			TestDataDigester testDigester=new TestDataDigester(_fconf,data);
 			BoboIndexer indexer=new BoboIndexer(testDigester,idxDir);
 			indexer.index();
+			
+			IndexWriterConfig writerConfig = new IndexWriterConfig(Version.LUCENE_40,new StandardAnalyzer(Version.LUCENE_40));
+			IndexWriter writer = new IndexWriter(idxDir, writerConfig);
+			writer.deleteDocuments();
 			IndexReader r = IndexReader.open(idxDir,false);
 			r.deleteDocument(r.maxDoc() - 1);
 			//r.flush();
@@ -908,22 +922,22 @@ public class BoboTestCase extends TestCase {
           result = boboBrowser.browse(br);
           assertEquals(1,result.getNumHits());
           hit = result.getHits()[0];
-          Map<String,TermFrequencyVector> tvMap = hit.getTermFreqMap();
+          Map<String,List<TermFrequencyPair>> tvMap = hit.getTermFreqMap();
           assertNotNull(tvMap);
           
           assertEquals(1, tvMap.size());
           
-          TermFrequencyVector tv = tvMap.get("tv");
+          List<TermFrequencyPair> tv = tvMap.get("tv");
           assertNotNull(tv);
           
-          assertEquals("bobo", tv.terms[0]);
-          assertEquals(2, tv.freqs[0]);
+          assertEquals("bobo", tv.get(0).term);
+          assertEquals(2, tv.get(0).freq);
           
-          assertEquals("lucene", tv.terms[1]);
-          assertEquals(3, tv.freqs[1]);
+          assertEquals("lucene", tv.get(1).term);
+          assertEquals(3, tv.get(1).freq);
 
-          assertEquals("test", tv.terms[2]);
-          assertEquals(1, tv.freqs[2]);
+          assertEquals("test", tv.get(2).term);
+          assertEquals(1, tv.get(2).freq);
           
       } catch (BrowseException e) {
           e.printStackTrace();
@@ -949,7 +963,7 @@ public class BoboTestCase extends TestCase {
 		BrowseRequest br=new BrowseRequest();
 		br.setCount(10);
 		br.setOffset(0);
-		br.setSort(new SortField[]{new SortField("date",SortField.CUSTOM,false)});
+		br.setSort(new SortField[]{new SortField("date",SortField.Type.CUSTOM,false)});
 		BrowseResult result = null;
         BoboBrowser boboBrowser=null;
         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd");
@@ -1387,7 +1401,7 @@ public class BoboTestCase extends TestCase {
       
 
       br.setFacetSpec("char", charOutput);
-      br.addSortField(new SortField("date",SortField.CUSTOM,true));
+      br.addSortField(new SortField("date",SortField.Type.CUSTOM,true));
       
       HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
       answer.put("char", Arrays.asList(new BrowseFacet[]{new BrowseFacet("a",1),new BrowseFacet("i",1),new BrowseFacet("k",1)}));
@@ -1408,7 +1422,7 @@ public class BoboTestCase extends TestCase {
       ospec.setExpandSelection(false);
       br.setFacetSpec("color", ospec);
      
-      br.addSortField(new SortField("date",SortField.CUSTOM,true));
+      br.addSortField(new SortField("date",SortField.Type.CUSTOM,true));
       
       HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
       answer.put("color", Arrays.asList(new BrowseFacet[]{new BrowseFacet("blue",2),new BrowseFacet("green",1),new BrowseFacet("red",1)}));
@@ -1448,7 +1462,7 @@ public class BoboTestCase extends TestCase {
       ospec.setExpandSelection(false);
       br.setFacetSpec("color", ospec);
      
-      br.addSortField(new SortField("date",SortField.CUSTOM,true));
+      br.addSortField(new SortField("date",SortField.Type.CUSTOM,true));
       
       HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
       answer.put("color", Arrays.asList(new BrowseFacet[]{new BrowseFacet("green",1),new BrowseFacet("red",1)}));
@@ -1498,18 +1512,18 @@ public class BoboTestCase extends TestCase {
 	public void testLuceneSort() throws IOException
 	{
 	  
-	  IndexReader srcReader=IndexReader.open(_indexDir,true);
+	  DirectoryReader srcReader=DirectoryReader.open(_indexDir);
       try{
         List<FacetHandler<?>> facetHandlers = new ArrayList<FacetHandler<?>>();
         facetHandlers.add(new SimpleFacetHandler("id"));
         
-        BoboIndexReader reader= BoboIndexReader.getInstance(srcReader,facetHandlers, null);       // not facet handlers to help
+        BoboCompositeReader reader= new BoboCompositeReader(srcReader,facetHandlers, null);       // not facet handlers to help
         BoboBrowser browser = new BoboBrowser(reader);
         
         BrowseRequest browseRequest = new BrowseRequest();
         browseRequest.setCount(10);
         browseRequest.setOffset(0);
-        browseRequest.addSortField(new SortField("date",SortField.STRING));
+        browseRequest.addSortField(new SortField("date",SortField.Type.STRING));
         
 
         doTest(browser,browseRequest,7,null,new String[]{"1","3","5","2","4","7","6"});
@@ -1569,7 +1583,7 @@ public class BoboTestCase extends TestCase {
       sel.addValue("[2003/01/01 TO 2005/01/01]");
       br.addSelection(sel);
 
-      br.addSortField(new SortField("date",SortField.CUSTOM,false));
+      br.addSortField(new SortField("date",SortField.Type.CUSTOM,false));
 
       doTest(br,5,null,new String[]{"1","3","5","2","4"});
 	}
@@ -1607,7 +1621,7 @@ public class BoboTestCase extends TestCase {
       ospec.setExpandSelection(false);
       br.setFacetSpec("color", ospec);
      
-      br.addSortField(new SortField("date",SortField.CUSTOM,false));
+      br.addSortField(new SortField("date",SortField.Type.CUSTOM,false));
       
       doTest(br,7,null,new String[]{"1","3","5","2","4","7","6"});
     }
@@ -1619,7 +1633,7 @@ public class BoboTestCase extends TestCase {
         br.setOffset(0);
 
 
-        br.setSort(new SortField[]{new SortField("color",SortField.CUSTOM,false),new SortField("number",SortField.CUSTOM,true)});
+        br.setSort(new SortField[]{new SortField("color",SortField.Type.CUSTOM,false),new SortField("number",SortField.Type.CUSTOM,true)});
 
         doTest(br,7,null,new String[]{"5","4","6","3","2","1","7"});
         
@@ -1672,24 +1686,24 @@ public class BoboTestCase extends TestCase {
       br.setCount(10);
       br.setOffset(0);
       
-      br.setSort(new SortField[]{new SortField("number",SortField.CUSTOM,true)});
+      br.setSort(new SortField[]{new SortField("number",SortField.Type.CUSTOM,true)});
       doTest(br,7,null,new String[]{"6","5","4","3","2","1","7"});
-      br.setSort(new SortField[]{new SortField("name",SortField.STRING,false)});
+      br.setSort(new SortField[]{new SortField("name",SortField.Type.STRING,false)});
       doTest(br,7,null,new String[]{"7","4","6","2","3","1","5"});
       
       BrowseSelection sel=new BrowseSelection("color");
       sel.addValue("red");
       br.addSelection(sel);
-      br.setSort(new SortField[]{new SortField("number",SortField.CUSTOM,true)});
+      br.setSort(new SortField[]{new SortField("number",SortField.Type.CUSTOM,true)});
       doTest(br,3,null,new String[]{"2","1","7"});
-      br.setSort(new SortField[]{new SortField("name",SortField.STRING,false)});
+      br.setSort(new SortField[]{new SortField("name",SortField.Type.STRING,false)});
       doTest(br,3,null,new String[]{"7","2","1"});
       
       sel.addValue("blue");
       br.setQuery(new TermQuery(new Term("shape","square")));
-      br.setSort(new SortField[]{new SortField("number",SortField.CUSTOM,true)});
+      br.setSort(new SortField[]{new SortField("number",SortField.Type.CUSTOM,true)});
       doTest(br,3,null,new String[]{"5","1","7"});
-      br.setSort(new SortField[]{new SortField("name",SortField.STRING,false)});
+      br.setSort(new SortField[]{new SortField("name",SortField.Type.STRING,false)});
       doTest(br,3,null,new String[]{"7","1","5"});
 	}
 	
@@ -1697,7 +1711,7 @@ public class BoboTestCase extends TestCase {
 		
 		final class CustomSortComparatorSource extends DocComparatorSource{
 			@Override
-			public DocComparator getComparator(IndexReader reader, int docbase)
+			public DocComparator getComparator(AtomicReader reader, int docbase)
 					throws IOException {
 				return new CustomSortDocComparator();
 			}
@@ -1748,7 +1762,7 @@ public class BoboTestCase extends TestCase {
       br.setFacetSpec("color", spec);
       
 
-      br.setSort(new SortField[]{new SortField("number",SortField.CUSTOM,false)});
+      br.setSort(new SortField[]{new SortField("number",SortField.Type.CUSTOM,false)});
       
       HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
       answer.put("color", Arrays.asList(new BrowseFacet[]{new BrowseFacet("red",3),new BrowseFacet("blue",2)}));
@@ -1798,7 +1812,7 @@ public class BoboTestCase extends TestCase {
 	public void testQueryWithScore() throws Exception{
 		BrowseRequest br=new BrowseRequest();
 		br.setShowExplanation(false);	// default
-		  QueryParser parser=new QueryParser(Version.LUCENE_CURRENT,"color",new StandardAnalyzer(Version.LUCENE_CURRENT));
+		  QueryParser parser=new QueryParser(Version.LUCENE_40,"color",new StandardAnalyzer(Version.LUCENE_40));
 		  br.setQuery(parser.parse("color:red OR shape:square"));
 	      br.setCount(10);
 	      br.setOffset(0);
@@ -1841,7 +1855,7 @@ public class BoboTestCase extends TestCase {
   public void testBrowseWithQuery(){
 		try{
 		  BrowseRequest br=new BrowseRequest();
-		  QueryParser parser=new QueryParser(Version.LUCENE_CURRENT,"shape",new StandardAnalyzer(Version.LUCENE_CURRENT));
+		  QueryParser parser=new QueryParser(Version.LUCENE_40,"shape",new StandardAnalyzer(Version.LUCENE_40));
 		  br.setQuery(parser.parse("square OR circle"));
 	      br.setCount(10);
 	      br.setOffset(0);
@@ -1851,7 +1865,7 @@ public class BoboTestCase extends TestCase {
 	      br.addSelection(sel);
 	      
 	      
-	      br.setSort(new SortField[]{new SortField("number",SortField.CUSTOM,false)});
+	      br.setSort(new SortField[]{new SortField("number",SortField.Type.CUSTOM,false)});
 	      doTest(br,2,null,new String[]{"7","1"});
 	      
 
@@ -1887,7 +1901,7 @@ public class BoboTestCase extends TestCase {
 	    FacetSpec ospec=new FacetSpec();
 	    br.setFacetSpec("compactnum", ospec);
 	    
-	    br.setSort(new SortField[]{new SortField("compactnum",SortField.CUSTOM,true)});
+	    br.setSort(new SortField[]{new SortField("compactnum",SortField.Type.CUSTOM,true)});
 	    
 	    HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
 	     
@@ -1947,7 +1961,7 @@ public class BoboTestCase extends TestCase {
 
     FacetSpec ospec=new FacetSpec();
     br.setFacetSpec("multiwithweight", ospec);
-    br.setSort(new SortField[]{new SortField("multiwithweight",SortField.CUSTOM,true)});
+    br.setSort(new SortField[]{new SortField("multiwithweight",SortField.Type.CUSTOM,true)});
     HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
 
     answer.put("multiwithweight", Arrays.asList(new BrowseFacet[]{new BrowseFacet("cool",3),new BrowseFacet("good",2)}));
@@ -1981,7 +1995,7 @@ public class BoboTestCase extends TestCase {
 
 	    FacetSpec ospec=new FacetSpec();
 	    br.setFacetSpec("multinum", ospec);
-	    br.setSort(new SortField[]{new SortField("multinum",SortField.CUSTOM,true)});
+	    br.setSort(new SortField[]{new SortField("multinum",SortField.Type.CUSTOM,true)});
 	    HashMap<String,List<BrowseFacet>> answer=new HashMap<String,List<BrowseFacet>>();
 
 		answer.put("multinum", Arrays.asList(new BrowseFacet[]{new BrowseFacet("001",3),new BrowseFacet("002",1),new BrowseFacet("003",3),new BrowseFacet("007",2),new BrowseFacet("008",1),new BrowseFacet("012",1)}));
@@ -2286,7 +2300,7 @@ public class BoboTestCase extends TestCase {
 	  BrowseRequest browseRequest = new BrowseRequest();
       browseRequest.setCount(10);
       browseRequest.setOffset(0);
-      browseRequest.addSortField(new SortField("date",SortField.CUSTOM));
+      browseRequest.addSortField(new SortField("date",SortField.Type.CUSTOM));
       
       BrowseSelection colorSel = new BrowseSelection("color");
       colorSel.addValue("red");
@@ -2315,7 +2329,7 @@ public class BoboTestCase extends TestCase {
       
       BoboBrowser boboBrowser = newBrowser();
       
-      browseRequest.setSort(new SortField[]{new SortField("compactnum",SortField.CUSTOM,true)});
+      browseRequest.setSort(new SortField[]{new SortField("compactnum",SortField.Type.CUSTOM,true)});
       
       MultiBoboBrowser multiBoboBrowser = new MultiBoboBrowser(new Browsable[] {boboBrowser, boboBrowser});
       BrowseResult mergedResult = multiBoboBrowser.browse(browseRequest);
@@ -2328,7 +2342,7 @@ public class BoboTestCase extends TestCase {
       
       doTest(mergedResult, browseRequest, 4, answer, new String[]{"7","7","1","1"});
       
-      browseRequest.setSort(new SortField[]{new SortField("multinum",SortField.CUSTOM,true)});
+      browseRequest.setSort(new SortField[]{new SortField("multinum",SortField.Type.CUSTOM,true)});
       mergedResult = multiBoboBrowser.browse(browseRequest);
       doTest(mergedResult, browseRequest, 4, answer, new String[]{"7","7","1","1"});
       mergedResult.close();
@@ -2621,9 +2635,9 @@ public class BoboTestCase extends TestCase {
 			Directory tmpDir = new RAMDirectory();
 			IndexWriter subWriter = new IndexWriter(tmpDir,new StandardAnalyzer(Version.LUCENE_CURRENT),MaxFieldLength.UNLIMITED);
 			subWriter.addDocument(doc);
-			subWriter.optimize();
+			subWriter.forceMerge(1);
 			subWriter.close();
-			writer.addIndexesNoOptimize(new Directory[]{tmpDir});
+			writer.addIndexes(new Directory[]{tmpDir});
 			writer.commit();
 			reader = (BoboIndexReader)boboReader.reopen();
 			assertNotSame(boboReader, reader);
@@ -2649,7 +2663,7 @@ public class BoboTestCase extends TestCase {
     /* Underlying time facet for DynamicTimeRangeFacetHandler */
     facetHandlers.add(new RangeFacetHandler("timeinmillis", new PredefinedTermListFactory(Long.class, DynamicTimeRangeFacetHandler.NUMBER_FORMAT),null));
     Directory idxDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(idxDir,new StandardAnalyzer(Version.LUCENE_CURRENT),MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(idxDir,new StandardAnalyzer(Version.LUCENE_40),MaxFieldLength.UNLIMITED);
 	  
 	  long now = System.currentTimeMillis();
 	  DecimalFormat df = new DecimalFormat(DynamicTimeRangeFacetHandler.NUMBER_FORMAT);
@@ -2658,11 +2672,11 @@ public class BoboTestCase extends TestCase {
 	    Document d = new Document();
 	    d.add(buildMetaField("timeinmillis", df.format(now - l*3500000)));
 	    writer.addDocument(d);
-	    writer.optimize();
+	    writer.forceMerge(1);
 	    writer.commit();
 	  }
-    IndexReader idxReader = IndexReader.open(idxDir,true);
-    BoboIndexReader boboReader = BoboIndexReader.getInstance(idxReader,facetHandlers);
+    DirectoryReader idxReader = DirectoryReader.open(idxDir);
+    BoboCompositeReader boboReader = new     BoboCompositeReader(idxReader,facetHandlers);
     BoboBrowser browser = new BoboBrowser(boboReader);
     List<String> ranges = new ArrayList<String>();
     ranges.add("000000001");

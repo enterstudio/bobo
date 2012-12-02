@@ -26,7 +26,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
 import com.browseengine.bobo.api.BoboBrowser;
-import com.browseengine.bobo.api.BoboIndexReader;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.BrowseRequest;
 import com.browseengine.bobo.api.BrowseResult;
@@ -46,7 +46,7 @@ public class AttributesFacetHandlerTest extends TestCase {
   private List<FacetHandler<?>> facetHandlers;
   private AttributesFacetHandler attributesFacetHandler;
   private BoboBrowser browser;
-  private BoboIndexReader boboReader;
+  private BoboCompositeReader boboReader;
   private Map<String, String> selectionProperties;
   static final String AttributeHandlerName = "attributes";
 
@@ -87,8 +87,8 @@ public class AttributesFacetHandlerTest extends TestCase {
     attributesFacetHandler = new AttributesFacetHandler(AttributeHandlerName, AttributeHandlerName, null, null,
         new HashMap<String, String>());
     facetHandlers.add(attributesFacetHandler);
-    IndexReader reader = DirectoryReader.open(directory);
-     boboReader = BoboIndexReader.getInstance(reader, facetHandlers);
+    DirectoryReader reader = DirectoryReader.open(directory);
+     boboReader = new BoboCompositeReader(reader, facetHandlers, null);
     attributesFacetHandler.loadFacetData(boboReader);
     browser = new BoboBrowser(boboReader);
   }
@@ -288,7 +288,7 @@ public class AttributesFacetHandlerTest extends TestCase {
         facetProps);
     facetHandlers.add(attributesFacetHandler);
     IndexReader reader = DirectoryReader.open(directory);
-     boboReader = new BoboDirectoryReader(reader, facetHandlers);
+     boboReader = new BoboCompositeReader(reader, facetHandlers, null);
     attributesFacetHandler.loadFacetData(boboReader);
     browser = new BoboBrowser(boboReader);
   }

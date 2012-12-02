@@ -11,14 +11,15 @@ import java.util.Set;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
 import com.browseengine.bobo.api.BoboBrowser;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BoboIndexReader;
 import com.browseengine.bobo.api.BrowseSelection;
 import com.browseengine.bobo.api.FacetSpec;
@@ -81,20 +82,11 @@ public class FacetHandlerTest extends TestCase {
 	{
 		super(testname);
 		_ramDir = new RAMDirectory();
-		try
-		{
-			IndexWriter writer = new IndexWriter(_ramDir,new StandardAnalyzer(Version.LUCENE_CURRENT),MaxFieldLength.UNLIMITED);
-			writer.close();
-		}
-		catch(Exception ioe)
-		{
-			fail("unable to load test");
-		}
 	}
 	
 	public void testFacetHandlerLoad() throws Exception
 	{
-		IndexReader reader = IndexReader.open(_ramDir,true);
+		DirectoryReader reader = DirectoryReader.open(_ramDir);
 		
 		List<FacetHandler<?>> list = new LinkedList<FacetHandler<?>>();
 		NoopFacetHandler h1 = new NoopFacetHandler("A");
@@ -124,7 +116,7 @@ public class FacetHandlerTest extends TestCase {
 		list.add(h5);
 		
 		
-		BoboIndexReader boboReader = BoboIndexReader.getInstance(reader,list, null);
+		BoboCompositeReader boboReader = new BoboCompositeReader(reader,list, null);
 		
 		BoboBrowser browser = new BoboBrowser(boboReader);
 		HashSet<String> s6 = new HashSet<String>();
@@ -169,7 +161,7 @@ public class FacetHandlerTest extends TestCase {
 	
 	public void testNegativeLoadTest() throws Exception
 	{
-		IndexReader reader = IndexReader.open(_ramDir,true);
+		DirectoryReader reader = DirectoryReader.open(_ramDir);
 		
 		List<FacetHandler<?>> list = new LinkedList<FacetHandler<?>>();
 		HashSet<String> s1 = new HashSet<String>();
@@ -201,7 +193,7 @@ public class FacetHandlerTest extends TestCase {
 		list.add(h5);
 		
 		
-		BoboIndexReader boboReader = BoboIndexReader.getInstance(reader,list, null);
+		BoboCompositeReader boboReader = new BoboCompositeReader(reader,list, null);
 		
 		BoboBrowser browser = new BoboBrowser(boboReader);
 		

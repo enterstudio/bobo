@@ -85,7 +85,7 @@ public class TestSectionSearch extends TestCase
     doc.add(field);
   }
   
-  private void addTextField(Document doc, String fieldName, String[] sections)
+  private void addTextField(Document doc, String fieldName, String[] sections) throws IOException
   {
     for(int i = 0; i < sections.length; i++)
     {

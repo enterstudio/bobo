@@ -2,7 +2,6 @@ package com.browseengine.bobo.test;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -10,25 +9,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.apache.lucene.LucenePackage;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import com.browseengine.bobo.api.BoboBrowser;
-import com.browseengine.bobo.api.BoboIndexReader;
+import com.browseengine.bobo.api.BoboCompositeReader;
 import com.browseengine.bobo.api.BrowseException;
 import com.browseengine.bobo.api.BrowseFacet;
 import com.browseengine.bobo.api.BrowseRequest;
@@ -39,7 +34,6 @@ import com.browseengine.bobo.api.FacetSpec;
 import com.browseengine.bobo.api.FacetSpec.FacetSortSpec;
 import com.browseengine.bobo.facets.FacetHandler;
 import com.browseengine.bobo.facets.data.PredefinedTermListFactory;
-import com.browseengine.bobo.facets.impl.DefaultFacetCountCollector;
 import com.browseengine.bobo.facets.impl.MultiValueFacetHandler;
 import com.browseengine.bobo.facets.impl.SimpleFacetHandler;
 
@@ -72,7 +66,7 @@ public class LucenePerf
     FSDirectory directory = new SimpleFSDirectory(file);
 //    FSDirectory directory = FSDirectory.getDirectory(file);
     System.out.println(directory.getClass().getName());
-    IndexReader reader = IndexReader.open(directory, true);
+    DirectoryReader reader = DirectoryReader.open(directory);
     loadFile();
 //    TermEnum termEnum = reader.terms(new Term("b", ""));
 //    while(termEnum.next())
@@ -90,7 +84,7 @@ public class LucenePerf
     facetHandlers.add(new SimpleFacetHandler("geo_region"));
     facetHandlers.add(new MultiValueFacetHandler("education_id", new PredefinedTermListFactory<Integer>(Integer.class,"0000000000")));
     long tgetinstance = System.currentTimeMillis();
-    final BoboIndexReader boboReader = BoboIndexReader.getInstance(reader, facetHandlers , null);
+    final BoboCompositeReader boboReader = new BoboCompositeReader(reader, facetHandlers , null);
     System.out.println("getInstanceTime: " + (System.currentTimeMillis() - tgetinstance));
 //warming
     for(int x=0; x<30; x++)
@@ -117,7 +111,7 @@ public class LucenePerf
     System.out.println("average time: " + ((float)ttime/(float)numItr/(float)numThread/(float)inNumItr));
     System.out.println(LucenePackage.get());
   }
-  private static long doSearch(int numThread,final BoboIndexReader boboReader, final Collection<FacetHandler<?>> facetHandlers) throws IOException,
+  private static long doSearch(int numThread,final BoboCompositeReader boboReader, final Collection<FacetHandler<?>> facetHandlers) throws IOException,
       CorruptIndexException, InterruptedException
   {
     Thread[] threads = new Thread[numThread];
@@ -166,7 +160,7 @@ public class LucenePerf
  *        00000001482(382), -00000000001(0)]
 
  */
-  private static long oneRun(BoboIndexReader boboReader,
+  private static long oneRun(BoboCompositeReader boboReader,
       Collection<FacetHandler<?>> facetHandlers) throws IOException,
       BrowseException
   {
