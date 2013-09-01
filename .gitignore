@@ -1,11 +1,11 @@
 bobo-browse/build/
-bobo-browse/src/main/resources/
+bobo-browse/src/main/resources/git.properties
 bobo-browse/target/
 bobo-gwt/build/
 bobo-service/build/
 bobo-solr/build/
 bobo-solr/target/
-bobo-solr/src/main/resources/
+bobo-solr/src/main/resources
 build-test/
 cardemo/target/
 dist/

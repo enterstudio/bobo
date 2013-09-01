@@ -27,7 +27,7 @@ public class OrDocIdSetIterator extends DocIdSetIterator {
     _heap = new Item[sets.size()];
     _size = 0;
     for (DocIdSet set : sets) {
-      _heap[_size++] = new Item(set.iterator() == null ? DocIdSet.EMPTY_DOCIDSET.iterator()
+      _heap[_size++] = new Item(set.iterator() == null ? EmptyDocIdSet.getInstance().iterator()
           : set.iterator());
     }
     if (_size == 0) _curDoc = DocIdSetIterator.NO_MORE_DOCS;
@@ -144,7 +144,6 @@ public class OrDocIdSetIterator extends DocIdSetIterator {
 
   @Override
   public long cost() {
-    // TODO Auto-generated method stub
     return 0;
   }
 
