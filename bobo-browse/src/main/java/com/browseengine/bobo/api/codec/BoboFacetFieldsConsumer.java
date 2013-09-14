@@ -1,5 +1,6 @@
 package com.browseengine.bobo.api.codec;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -86,11 +87,22 @@ public class BoboFacetFieldsConsumer extends FieldsConsumer {
       out.writeVInt(fieldId);
       BytesRef[] termArr = termList.toArray(new BytesRef[termList.size()]);
       
+      // gen term buffer
+      ByteArrayOutputStream bout = new ByteArrayOutputStream();
+      for (BytesRef bref : termArr) {
+        bout.write(bref.bytes, bref.offset, bref.length);
+      }
+      
+      byte[] termBytes = bout.toByteArray();
+      out.writeVInt(termBytes.length);
+      out.writeBytes(termBytes, termBytes.length);
+      
       out.writeVInt(termArr.length);
       for (int i=0; i<termArr.length; ++i) {
         BytesRef term = termArr[i];
         TermStats stats = termStats.get(i);
-        out.writeString(term.utf8ToString());
+        out.writeVInt(term.length);
+        //out.writeBytes(term.bytes, term.offset, term.length);
         out.writeVInt(stats.docFreq);
         out.writeLong(stats.totalTermFreq);
       }

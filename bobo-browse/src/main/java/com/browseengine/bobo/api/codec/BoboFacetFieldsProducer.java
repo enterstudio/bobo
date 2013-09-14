@@ -62,13 +62,20 @@ public class BoboFacetFieldsProducer extends FieldsProducer {
       fieldMeta.field = state.fieldInfos.fieldInfo(fieldId);
       
       fieldMetaMap.put(fieldMeta.field.name, fieldMeta);
+      
+      int bytesLen = in.readVInt();
+      byte[] termBytes = new byte[bytesLen];
+      in.readBytes(termBytes, 0, bytesLen);
           
       fieldMeta.termCount = in.readVInt();
       
       BytesRef[] terms = new BytesRef[fieldMeta.termCount];
       TermMetaWithState[] metaList = new TermMetaWithState[terms.length];
+      int offset = 0;
       for (int k = 0; k <terms.length; ++k) {
-        terms[k] = new BytesRef(in.readString());
+        int len = in.readVInt();
+        terms[k] = new BytesRef(termBytes, offset, len);
+        offset+=len;
         metaList[k] = new TermMetaWithState();
         metaList[k].df = in.readVInt();
         metaList[k].totalTf = in.readLong();
