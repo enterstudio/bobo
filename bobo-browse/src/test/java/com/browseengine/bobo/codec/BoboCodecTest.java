@@ -1,4 +1,4 @@
-package com.browseengine.bobo.test;
+package com.browseengine.bobo.codec;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -8,8 +8,10 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -75,4 +77,6 @@ public class BoboCodecTest {
     
     reader.close();
   }
+  
+  private static BoboCodec codec = new BoboCodec();
 }
