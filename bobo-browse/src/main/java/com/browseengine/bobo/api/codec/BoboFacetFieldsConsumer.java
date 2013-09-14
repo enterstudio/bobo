@@ -16,6 +16,7 @@ import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -58,10 +59,12 @@ public class BoboFacetFieldsConsumer extends FieldsConsumer {
   
   private class TermsWriter extends TermsConsumer {
     private final int fieldId;
+    private final FieldInfo field;
     List<BytesRef> termList = new ArrayList<BytesRef>();
     List<TermStats> termStats = new ArrayList<TermStats>();
     
     TermsWriter(FieldInfo field) {
+      this.field = field;
       fieldId = field.number;
       postingsWriter.setField(field);
     }
@@ -102,12 +105,15 @@ public class BoboFacetFieldsConsumer extends FieldsConsumer {
         BytesRef term = termArr[i];
         TermStats stats = termStats.get(i);
         out.writeVInt(term.length);
-        //out.writeBytes(term.bytes, term.offset, term.length);
         out.writeVInt(stats.docFreq);
-        out.writeLong(stats.totalTermFreq);
+        if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          out.writeVLong(stats.totalTermFreq - stats.docFreq);
+        }
       }
-      out.writeLong(sumTotalTermFreq);
-      out.writeLong(sumDocFreq);
+      if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        out.writeVLong(sumTotalTermFreq);
+      }
+      out.writeVLong(sumDocFreq);
       out.writeVInt(docCount);
       postingsWriter.flushTermsBlock(termArr.length, termArr.length); // all of it
       

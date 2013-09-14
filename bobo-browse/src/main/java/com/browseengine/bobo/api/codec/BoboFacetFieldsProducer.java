@@ -13,6 +13,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -78,11 +79,15 @@ public class BoboFacetFieldsProducer extends FieldsProducer {
         offset+=len;
         metaList[k] = new TermMetaWithState();
         metaList[k].df = in.readVInt();
-        metaList[k].totalTf = in.readLong();
+        
+        if (fieldMeta.field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          metaList[k].totalTf = in.readVLong() + metaList[k].df;
+        }
       }
-      
-      fieldMeta.sumTotalTermFreq = in.readLong();
-      fieldMeta.sumDocFreq = in.readLong();
+      if (fieldMeta.field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        fieldMeta.sumTotalTermFreq = in.readVLong();
+      }
+      fieldMeta.sumDocFreq = in.readVLong();
       fieldMeta.docCount = in.readVInt();
       
       
