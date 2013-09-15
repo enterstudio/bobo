@@ -2,6 +2,7 @@ package com.browseengine.bobo.api.codec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -14,12 +15,13 @@ import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.PackedInts;
 
 public class BoboFacetFieldsConsumer extends FieldsConsumer {
 
@@ -92,8 +94,13 @@ public class BoboFacetFieldsConsumer extends FieldsConsumer {
       
       // gen term buffer
       ByteArrayOutputStream bout = new ByteArrayOutputStream();
+      
+      //PackedInts.getWriter(out, valueCount, bitsPerValue, acceptableOverheadRatio);
       for (BytesRef bref : termArr) {
-        bout.write(bref.bytes, bref.offset, bref.length);
+        long v = Long.parseLong(bref.utf8ToString());
+        
+        byte[] bytes = ByteBuffer.allocate(8).putLong(v).array();        
+        bout.write(bytes);
       }
       
       byte[] termBytes = bout.toByteArray();
@@ -102,9 +109,9 @@ public class BoboFacetFieldsConsumer extends FieldsConsumer {
       
       out.writeVInt(termArr.length);
       for (int i=0; i<termArr.length; ++i) {
-        BytesRef term = termArr[i];
+       // BytesRef term = termArr[i];
         TermStats stats = termStats.get(i);
-        out.writeVInt(term.length);
+      //  out.writeVInt(term.length);
         out.writeVInt(stats.docFreq);
         if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
           out.writeVLong(stats.totalTermFreq - stats.docFreq);

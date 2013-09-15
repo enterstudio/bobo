@@ -1,6 +1,9 @@
 package com.browseengine.bobo.api.codec;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -10,10 +13,10 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -55,6 +58,8 @@ public class BoboFacetFieldsProducer extends FieldsProducer {
 
     int fieldCount = in.readVInt();
     postingsReader.init(in);
+    DecimalFormat format = new DecimalFormat("000000000000000");
+    
     for (int i = 0; i < fieldCount; ++i) {
       FieldMeta fieldMeta = new FieldMeta();
       
@@ -72,11 +77,15 @@ public class BoboFacetFieldsProducer extends FieldsProducer {
       
       BytesRef[] terms = new BytesRef[fieldMeta.termCount];
       TermMetaWithState[] metaList = new TermMetaWithState[terms.length];
+      
+      LongBuffer longBuffer = ByteBuffer.wrap(termBytes).asLongBuffer();
       int offset = 0;
       for (int k = 0; k <terms.length; ++k) {
-        int len = in.readVInt();
-        terms[k] = new BytesRef(termBytes, offset, len);
-        offset+=len;
+      //  int len = in.readVInt();
+        long v = longBuffer.get(k);
+        String formated = format.format(v);
+        terms[k] = new BytesRef(formated);
+        offset+=8;
         metaList[k] = new TermMetaWithState();
         metaList[k].df = in.readVInt();
         
